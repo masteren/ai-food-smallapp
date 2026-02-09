@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title or "AI食材認識・栄養最適化サポート" }}</title>
+  <link rel="icon" type="image/png"
+      href="{{ url_for('static', filename='logo_new.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="page{% if active == 'vision' %} page-vision{% endif %}">
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar" style="background: linear-gradient(180deg, rgba(10,14,28,.78), rgba(10,14,28,.42)), url('{{ url_for('static', filename=sidebar_bg|default('top_background.png')) }}') center / cover no-repeat;">
+      <a class="brand" href="{{ url_for('home') }}" style="padding:8px 10px;">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>AI Pantry OS</h1>
+          <small>食材認識・栄養最適化</small>
+        </div>
+      </a>
+
+      <div class="side-section">
+        <div class="side-title">メニュー</div>
+        <nav class="nav">
+          <a href="{{ url_for('home') }}" class="{% if active=='home' %}active{% endif %}">
+            <span class="dot"></span> ホーム
+          </a>
+          {% if user %}
+            <a href="{{ url_for('recognize') }}" class="{% if active=='recognize' %}active{% endif %}">
+              <span class="dot violet"></span> AI認識
+            </a>
+            <a href="{{ url_for('vision') }}" class="{% if active=='vision' %}active{% endif %}">
+              <span class="dot violet"></span> AI認識(API)
+            </a>
+            <a href="{{ url_for('pantry') }}" class="{% if active=='pantry' %}active{% endif %}">
+              <span class="dot green"></span> 所持食材
+            </a>
+            <a href="{{ url_for('recipes') }}" class="{% if active=='recipes' %}active{% endif %}">
+              <span class="dot blue"></span> レシピ提案
+            </a>
+            <a href="{{ url_for('nutrition') }}" class="{% if active=='nutrition' %}active{% endif %}">
+              <span class="dot amber"></span> 栄養スコア
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="{% if active=='dashboard' %}active{% endif %}">
+              <span class="dot red"></span> ダッシュボード
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth') }}">
+              <span class="dot violet"></span> AI認識
+            </a>
+            <a href="{{ url_for('auth') }}">
+              <span class="dot green"></span> 所持食材
+            </a>
+            <a href="{{ url_for('auth') }}">
+              <span class="dot blue"></span> レシピ提案
+            </a>
+            <a href="{{ url_for('auth') }}">
+              <span class="dot amber"></span> 栄養スコア
+            </a>
+            <a href="{{ url_for('auth') }}">
+              <span class="dot red"></span> ダッシュボード
+            </a>
+          {% endif %}
+        </nav>
+      </div>
+
+      <div class="side-section">
+        <div class="side-title">ステータス</div>
+        <div class="side-card">
+          <div class="kpi">
+            <strong>{{ stats_ingredients or 18 }}</strong>
+            <span>在庫数</span>
+          </div>
+          <p>AI認識→自動追加→レシピ提案→栄養評価までを一気通貫。</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <a class="brand" href="{{ url_for('home') }}" style="min-width: 210px;">
+          <img class="logo logo-small" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+          <div>
+            <h1 style="font-size:13px;">{{ header_title or "AI食材認識システム" }}</h1>
+            <small>{{ header_subtitle or "Fridge Photo → Ingredients → Recipes → Nutrition" }}</small>
+          </div>
+        </a>
+
+        <div class="search">
+          <form method="get" action="{{ url_for('search') }}" style="width: 100%; display: flex; align-items: center;">
+            <div class="field">
+              <span style="opacity:.75;">⌕</span>
+              <input name="q" placeholder="レシピを検索（例：蒸し焼き / 丼 / スープ）" type="search" enterkeyhint="search" />
+              <span class="pill">Enter</span>
+            </div>
+          </form>
+          <div class="pills"></div>
+        </div>
+
+        <div class="actions">
+          <a href="{{ url_for('notifications') }}" class="iconbtn" title="通知"><span>🔔</span><span class="badge" style="margin-left:-10px;">{{ alert_count or 0 }}</span></a>
+          {% if user %}
+            <a class="btn small" href="{{ url_for('logout') }}">ログアウト</a>
+          {% else %}
+            <a class="btn small btn-login" href="{{ url_for('auth') }}">ログイン</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <div class="container" id="app">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

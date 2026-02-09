@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% set title="ダッシュボード | AI Pantry OS" %}
+{% set active="dashboard" %}
+{% set header_title="ダッシュボード" %}
+{% set header_subtitle="履歴・統計・状態をまとめて表示" %}
+
+{% block content %}
+  <section class="hero u-mt8" style="margin-bottom:16px;">
+    <div class="row">
+      <div>
+        <h2>デモをすぐ体験</h2>
+        <p>サンプル画像でAI認識フローを30秒で体験できます。</p>
+        <div class="cta">
+          <a class="btn primary" href="{{ url_for('vision') }}?demo=1">デモ開始（30秒）</a>
+          <a class="btn" href="{{ url_for('vision') }}">AI認識へ</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="pagehead">
+    <div>
+      <h2>ダッシュボード</h2>
+      <p>AI認識履歴 / 食材変動 / レシピ実行 / 栄養スコアをまとめて追跡。</p>
+    </div>
+    <div class="smallrow">
+      <span class="pill">User: {{ user.username }}</span>
+      <span class="pill">DB: sqlite</span>
+    </div>
+  </div>
+
+  <div class="grid cols-4">
+    <div class="kpi-card">
+      <div class="row"><div><span>AI認識回数</span><div class="u-mt8"><strong>{{ recognition_count }}</strong></div></div><span class="dot violet"></span></div>
+      <div class="bar"><i style="width:{{ (recognition_count * 10) % 100 }}%"></i></div>
+    </div>
+    <div class="kpi-card">
+      <div class="row"><div><span>記録レシピ</span><div class="u-mt8"><strong>{{ recipe_count }}</strong></div></div><span class="dot blue"></span></div>
+      <div class="bar"><i style="width:{{ (recipe_count * 8) % 100 }}%"></i></div>
+    </div>
+    <div class="kpi-card">
+      <div class="row"><div><span>期限アラート</span><div class="u-mt8"><strong>{{ expiry_alert_count }}</strong></div></div><span class="dot red"></span></div>
+      <div class="bar"><i style="width:{{ (expiry_alert_count * 15) % 100 }}%"></i></div>
+    </div>
+    <div class="kpi-card">
+      <div class="row"><div><span>最近使用レシピ</span><div class="u-mt8"><strong>{{ recent_recipes|length }}</strong></div></div><span class="dot green"></span></div>
+      <div class="bar"><i style="width:{{ (recent_recipes|length * 25) % 100 }}%"></i></div>
+    </div>
+  </div>
+
+  <div class="u-mt16 grid cols-2">
+    <div class="card">
+      <div class="card-h">
+        <h3>AI認識ログ</h3>
+        <small>latest</small>
+      </div>
+      <div class="card-b">
+        <table class="table">
+          <thead><tr><th>日時</th><th>検出数</th><th class="right">状態</th></tr></thead>
+          <tbody>
+            {% for log in recognition_logs %}
+            <tr>
+              <td class="muted">{{ log.recognized_at[:16] }}</td>
+              <td>{{ log.items_count }}</td>
+              <td class="right"><span class="tag"><b>完了</b> 反映済</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="u-muted">認識ログはまだありません</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>最近作ったレシピ</h3>
+        <small>history</small>
+      </div>
+      <div class="card-b">
+        <table class="table">
+          <thead><tr><th>料理</th><th>日付</th><th class="right">操作</th></tr></thead>
+          <tbody>
+            {% for recipe in recent_recipes %}
+            <tr>
+              <td>{{ recipe.title }}</td>
+              <td class="muted">{{ recipe.cooked_at_date }}</td>
+              <td class="right"><a class="btn small" href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}">詳細</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="u-muted">料理履歴はまだありません</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

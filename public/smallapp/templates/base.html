@@ -12,7 +12,7 @@
 <body class="page{% if active == 'vision' %} page-vision{% endif %}">
   <div class="app">
     <!-- Sidebar -->
-    <aside class="sidebar" style="background: linear-gradient(180deg, rgba(10,14,28,.78), rgba(10,14,28,.42)), url('{{ url_for('static', filename=sidebar_bg|default('top_background.png')) }}') center / cover no-repeat;">
+    <aside class="sidebar">
       <a class="brand" href="{{ url_for('home') }}" style="padding:8px 10px;">
         <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
         <div>
@@ -39,6 +39,9 @@
             </a>
             <a href="{{ url_for('recipes') }}" class="{% if active=='recipes' %}active{% endif %}">
               <span class="dot blue"></span> レシピ提案
+            </a>
+            <a href="{{ url_for('recently_used') }}" class="{% if active=='recently_used' %}active{% endif %}">
+              <span class="dot blue"></span> 過去のレシピ
             </a>
             <a href="{{ url_for('nutrition') }}" class="{% if active=='nutrition' %}active{% endif %}">
               <span class="dot amber"></span> 栄養スコア

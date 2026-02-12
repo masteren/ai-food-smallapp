@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 from recipes_data import INTERNATIONAL_RECIPES
 
 DB_PATH = Path(__file__).with_name("db.sqlite3")
+
+
 def is_seeded(conn: sqlite3.Connection) -> bool:
     """
     判断是否已经初始化过演示数据。
@@ -541,6 +543,30 @@ def fetch_cooking_log_count(user_id: int) -> int:
             (user_id,),
         ).fetchone()
     return result["count"] if result else 0
+
+
+def fetch_recently_used_recipes(user_id: int, limit: int = 20) -> List[Dict[str, Any]]:
+    """Efficiently fetch recently used recipes with all details."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT DISTINCT
+                r.id,
+                r.title,
+                r.description,
+                r.ingredients_json,
+                r.nutrition_json,
+                MAX(cl.cooked_at_date) as last_cooked_date
+            FROM cooking_log cl
+            JOIN recipes r ON cl.recipe_id = r.id
+            WHERE cl.user_id = ?
+            GROUP BY r.id
+            ORDER BY last_cooked_date DESC
+            LIMIT ?
+            """,
+            (user_id, limit),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def search_recipes(keyword: str) -> List[Dict[str, Any]]:

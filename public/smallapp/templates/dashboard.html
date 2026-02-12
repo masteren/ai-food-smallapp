@@ -75,7 +75,7 @@
     <div class="card">
       <div class="card-h">
         <h3>最近作ったレシピ</h3>
-        <small>history</small>
+        <a class="btn small" href="{{ url_for('recently_used') }}">もっと見る</a>
       </div>
       <div class="card-b">
         <table class="table">
@@ -88,7 +88,12 @@
               <td class="right"><a class="btn small" href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}">詳細</a></td>
             </tr>
             {% else %}
-            <tr><td colspan="3" class="u-muted">料理履歴はまだありません</td></tr>
+            <tr>
+              <td colspan="3" class="u-muted">
+                料理履歴はまだありません
+                <a class="btn small" href="{{ url_for('recently_used') }}" style="margin-left:10px;">履歴ページへ</a>
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>

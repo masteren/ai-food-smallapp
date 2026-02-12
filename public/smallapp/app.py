@@ -22,6 +22,7 @@ from db import (
     fetch_cooking_log_count,
     fetch_expiry_alerts,
     fetch_cooking_logs_range,
+    fetch_recently_used_recipes,
     get_user_by_id,
     get_user_by_username,
     init_db,
@@ -99,6 +100,39 @@ def _demo_cache_path(image_bytes: bytes) -> Path:
 
 def _sha256_digest(image_bytes: bytes) -> str:
     return hashlib.sha256(image_bytes).hexdigest()
+
+
+def _current_week_monday_to_sunday(today: Optional[date] = None) -> List[str]:
+    base_day = today or date.today()
+    monday = base_day - timedelta(days=base_day.weekday())
+    return [(monday + timedelta(days=offset)).isoformat() for offset in range(7)]
+
+
+def _estimate_recipe_minutes(ingredients: List[Dict[str, object]], steps: List[str]) -> int:
+    step_count = max(1, len(steps))
+    ingredient_count = max(1, len(ingredients))
+    step_text = " ".join(steps)
+
+    # Simple heuristic for demo UI: step count + ingredient count + heavy cooking keywords.
+    minutes = 4 + step_count * 3 + ingredient_count
+    heavy_keywords = ("煮込", "揚げ", "焼き", "蒸し", "オーブン", "下ごしらえ")
+    if any(k in step_text for k in heavy_keywords):
+        minutes += 4
+    return max(5, min(60, minutes))
+
+
+def _recipe_level_stars(ingredients: List[Dict[str, object]], steps: List[str]) -> str:
+    complexity = len(steps) * 2 + len(ingredients)
+    step_text = " ".join(steps)
+    advanced_keywords = ("包む", "衣", "二度", "煮込", "揚げ")
+    if any(k in step_text for k in advanced_keywords):
+        complexity += 2
+
+    if complexity <= 8:
+        return "★☆☆"
+    if complexity <= 14:
+        return "★★☆"
+    return "★★★"
 
 
 def _read_demo_cache(path: Path) -> Optional[List[Dict[str, object]]]:
@@ -197,9 +231,7 @@ def home():
                                 for ing in json.loads(recipe["ingredients_json"])))
 
         # Calculate average protein for the week
-        today = date.today()
-        last_7_days = [today - timedelta(days=offset) for offset in range(6, -1, -1)]
-        labels = [day.isoformat() for day in last_7_days]
+        labels = _current_week_monday_to_sunday()
 
         logs = fetch_cooking_logs_range(user_id, labels[0], labels[-1])
         recipes_map = {recipe["id"]: recipe for recipe in recipes_data}
@@ -322,27 +354,16 @@ def dashboard():
     # Get recent logs
     recognition_logs = fetch_recognition_logs(user_id, limit=3)
 
-    # Get recent cooked recipes
-    today = date.today()
-    last_7_days = [today - timedelta(days=offset) for offset in range(6, -1, -1)]
-    labels = [day.isoformat() for day in last_7_days]
-
-    cooking_logs = fetch_cooking_logs_range(user_id, labels[0], labels[-1])
-    recipes_map = {recipe["id"]: recipe for recipe in fetch_recipes()}
-
-    recent_recipes = []
-    seen_recipe_ids = set()
-    for log in sorted(cooking_logs, key=lambda x: x["cooked_at_date"], reverse=True):
-        recipe = recipes_map.get(log["recipe_id"])
-        if recipe and log["recipe_id"] not in seen_recipe_ids:
-            recent_recipes.append({
-                "id": recipe["id"],
-                "title": recipe["title"],
-                "cooked_at_date": log["cooked_at_date"],
-            })
-            seen_recipe_ids.add(log["recipe_id"])
-            if len(recent_recipes) >= 3:
-                break
+    # Get recent cooked recipes (not limited to current week)
+    recent_recipes_raw = fetch_recently_used_recipes(user_id, limit=3)
+    recent_recipes = [
+        {
+            "id": recipe["id"],
+            "title": recipe["title"],
+            "cooked_at_date": recipe.get("last_cooked_date"),
+        }
+        for recipe in recent_recipes_raw
+    ]
 
     return render_template(
         "dashboard.html",
@@ -488,12 +509,7 @@ def pantry_add():
 @login_required
 def vision():
     demo_catalog = _build_demo_catalog()
-    return render_template(
-        "vision.html",
-        user=current_user(),
-        demo_catalog=demo_catalog,
-        sidebar_bg="future_background.png",
-    )
+    return render_template("vision.html", user=current_user(), demo_catalog=demo_catalog)
 
 
 @app.post("/api/recognize")
@@ -680,6 +696,13 @@ def pantry_delete(item_id: int):
 @app.get("/recipes")
 @login_required
 def recipes():
+    selected_filter = request.args.get("filter", "").strip()
+    selected_goal = request.args.get("goal", "").strip()
+    if selected_filter not in {"", "quick"}:
+        selected_filter = ""
+    if selected_goal not in {"", "low_fat"}:
+        selected_goal = ""
+
     pantry_items = fetch_pantry_items(session["user_id"])
     pantry_names = {item["name"] for item in pantry_items}
     recipes_data = []
@@ -702,6 +725,18 @@ def recipes():
             continue
 
         nutrition = json.loads(recipe["nutrition_json"])
+        steps = json.loads(recipe.get("steps_json", "[]"))
+        if not isinstance(steps, list):
+            steps = []
+        step_texts = [str(s) for s in steps]
+        cook_minutes = _estimate_recipe_minutes(ingredients, step_texts)
+        cook_time = f"{cook_minutes}分"
+        level_stars = _recipe_level_stars(ingredients, step_texts)
+
+        # Optional UI filters from query params.
+        if selected_filter == "quick" and cook_minutes > 15:
+            continue
+
         health_score = 0
         if nutrition.get("protein", 0) >= 30:
             health_score += 10
@@ -714,6 +749,9 @@ def recipes():
         if nutrition.get("carb", 0) >= 70:
             health_score -= 10
         health_score = max(0, min(40, health_score))
+
+        if selected_goal == "low_fat" and nutrition.get("fat", 0) > 15:
+            continue
 
         match_score = max(0, min(60, int(match_rate * 60) - missing_required * 8))
         total_score = match_score + health_score
@@ -737,11 +775,20 @@ def recipes():
                 "health_score": health_score,
                 "total_score": total_score,
                 "grade": grade,
+                "score": grade,
+                "time": cook_time,
+                "lvl": level_stars,
             }
         )
     recipes_data.sort(key=lambda r: r["total_score"], reverse=True)
     recipes_data = recipes_data[:15]
-    return render_template("recipes.html", recipes=recipes_data, user=current_user())
+    return render_template(
+        "recipes.html",
+        recipes=recipes_data,
+        user=current_user(),
+        selected_filter=selected_filter,
+        selected_goal=selected_goal,
+    )
 
 
 @app.get("/search")
@@ -764,6 +811,37 @@ def search():
         "search.html",
         query=query,
         results=results,
+        user=current_user(),
+    )
+
+
+@app.get("/recently-used")
+@app.get("/recently_used")
+@login_required
+def recently_used():
+    """Display recently used recipes efficiently."""
+    user_id = session["user_id"]
+    recipes = fetch_recently_used_recipes(user_id, limit=50)
+
+    # Format the data for display
+    recipes_data = []
+    for recipe in recipes:
+        try:
+            ingredients = json.loads(recipe.get("ingredients_json", "[]"))
+        except (json.JSONDecodeError, TypeError):
+            ingredients = []
+
+        recipes_data.append({
+            "id": recipe["id"],
+            "title": recipe["title"],
+            "description": recipe["description"],
+            "ingredients": ingredients,
+            "last_cooked_date": recipe["last_cooked_date"],
+        })
+
+    return render_template(
+        "recently_used.html",
+        recipes=recipes_data,
         user=current_user(),
     )
 
@@ -868,8 +946,7 @@ def nutrition():
     recipes_map = {recipe["id"]: recipe for recipe in fetch_recipes()}
 
     today = date.today()
-    last_7_days = [today - timedelta(days=offset) for offset in range(6, -1, -1)]
-    labels = [day.isoformat() for day in last_7_days]
+    labels = _current_week_monday_to_sunday(today)
 
     daily_totals = {label: {"kcal": 0, "protein": 0} for label in labels}
     today_totals = {"kcal": 0, "protein": 0, "veg_score": 0}

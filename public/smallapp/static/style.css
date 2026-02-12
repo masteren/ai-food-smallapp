@@ -127,16 +127,16 @@ kbd{
   flex:1; display:flex; align-items:center; gap:10px;
   padding:10px 12px;
   border-radius: 14px;
-  background: rgba(255,255,255,.045);
-  border:1px solid var(--stroke);
+  background: rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.20);
 }
 .search input{
   width:100%; border:0; outline:0; background:transparent;
-  color: var(--txt);
+  color: var(--input-text);
   caret-color: var(--txt);
 }
 .search input::placeholder{
-  color: var(--input-placeholder);
+  color: rgba(255,255,255,.58);
 }
 .pills{display:flex; gap:8px; flex-wrap:wrap}
 .pill{
@@ -146,6 +146,11 @@ kbd{
   color: var(--muted);
   font-size:12px;
   white-space: nowrap;
+}
+.pill.is-active{
+  color: var(--txt);
+  border-color: rgba(53,246,255,.28);
+  background: linear-gradient(90deg, rgba(53,246,255,.10), rgba(139,92,255,.08));
 }
 .pill.dot::before{
   content:""; width:8px; height:8px; border-radius:99px; display:inline-block;

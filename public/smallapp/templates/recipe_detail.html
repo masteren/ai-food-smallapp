@@ -40,7 +40,7 @@
           <div class="kpi-card">
             <div class="row">
               <div><span>栄養スコア</span><div class="u-mt8"><strong>{{ nutrition.kcal if nutrition else 420 }}</strong> <span class="u-muted">kcal</span></div></div>
-              <div class="score" style="color: #4CAF50;">{{ (nutrition.protein if nutrition else 48) }}g</div>
+              <div style="color: #4CAF50; font-weight: 700; white-space: nowrap;">たんぱく質 {{ (nutrition.protein if nutrition else 48) }}g</div>
             </div>
             <div class="bar"><i style="width:{{ ((nutrition.protein if nutrition else 48) / 50 * 100) % 100 }}%"></i></div>
           </div>
@@ -116,7 +116,17 @@
                 <tr>
                   <td class="muted">{{ loop.index }}</td>
                   <td>{{ step }}</td>
-                  <td class="right muted">—</td>
+                  <td class="right muted">
+                    {% if '煮' in step or '蒸' in step or '茹' in step %}
+                      約5分
+                    {% elif '焼' in step or '炒' in step or '揚' in step %}
+                      約3分
+                    {% elif '切' in step or '混' in step or '下ごしらえ' in step %}
+                      約2分
+                    {% else %}
+                      約2分
+                    {% endif %}
+                  </td>
                 </tr>
               {% endfor %}
             {% else %}

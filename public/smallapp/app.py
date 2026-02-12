@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import random
+import re
 from datetime import date, datetime, timedelta
 from functools import wraps
 from pathlib import Path
@@ -74,6 +75,16 @@ def current_user():
     return get_user_by_id(user_id)
 
 
+def _is_strong_password(password: str) -> bool:
+    if len(password) < 10:
+        return False
+    has_upper = re.search(r"[A-Z]", password) is not None
+    has_lower = re.search(r"[a-z]", password) is not None
+    has_digit = re.search(r"\d", password) is not None
+    has_symbol = re.search(r"[^A-Za-z0-9]", password) is not None
+    return has_upper and has_lower and has_digit and has_symbol
+
+
 def _build_demo_catalog() -> List[Dict[str, List[str]]]:
     base_dir = Path(app.root_path) / "static"
     catalog: List[Dict[str, List[str]]] = []
@@ -133,6 +144,87 @@ def _recipe_level_stars(ingredients: List[Dict[str, object]], steps: List[str]) 
     if complexity <= 14:
         return "★★☆"
     return "★★★"
+
+
+def _ingredient_note(name: str, unit: str, quantity: object) -> str:
+    unit = _unit_to_japanese(unit)
+    notes = {
+        "鶏肉": "筋や余分な脂を落とすと仕上がりが軽い。",
+        "鶏もも肉": "一口大に切ると火入れが均一になる。",
+        "鶏むね肉": "加熱しすぎると固くなるので注意。",
+        "豚肉": "臭みが気になる場合は酒を少量加える。",
+        "牛肉": "強火で短時間に焼くと旨みを残しやすい。",
+        "鶏卵": "溶きすぎず、半熟で止めると食感が良い。",
+        "卵": "溶きすぎず、半熟で止めると食感が良い。",
+        "玉ねぎ": "薄切りにすると甘みが出やすい。",
+        "長ねぎ": "青い部分は仕上げに加えると香りが立つ。",
+        "ネギ": "青い部分は仕上げに加えると香りが立つ。",
+        "にんにく": "焦げやすいので弱火で香りを引き出す。",
+        "ニンニク": "焦げやすいので弱火で香りを引き出す。",
+        "豆腐": "水切りすると味がぼやけにくい。",
+        "トマト": "酸味が強い場合は少量の砂糖で調整。",
+        "じゃがいも": "煮崩れ防止に大きめに切る。",
+        "ジャガイモ": "煮崩れ防止に大きめに切る。",
+        "ブロッコリー": "食感を残すなら加熱は短めに。",
+        "キノコ": "水分が出るので強火で一気に炒める。",
+        "チーズ": "火を止めてから加えると分離しにくい。",
+        "牛乳": "沸騰させず温めると分離を防げる。",
+        "米": "炊きたてより少し冷ましたご飯が扱いやすい。",
+        "米飯": "炊きたてより少し冷ましたご飯が扱いやすい。",
+    }
+    trimmed_name = name.strip()
+    if trimmed_name in notes:
+        return notes[trimmed_name]
+
+    if unit == "g":
+        return "下味を先につけると味が入りやすい。"
+    if unit in ("個", "枚"):
+        return "使う直前に準備すると風味を保ちやすい。"
+    if unit in ("ml", "cc"):
+        return "少しずつ加えて濃さを調整。"
+
+    try:
+        amount = float(quantity)
+    except (TypeError, ValueError):
+        amount = 0.0
+    if amount >= 300:
+        return "加熱ムラを避けるため数回に分けて調理。"
+    return "お好みで量を微調整してOK。"
+
+
+def _unit_to_japanese(unit: str) -> str:
+    normalized = str(unit or "").strip()
+    mapping = {
+        "汤匙": "大さじ",
+        "湯匙": "大さじ",
+        "碗": "杯",
+        "个": "個",
+        "個": "個",
+        "克": "g",
+        "公克": "g",
+        "毫升": "ml",
+        "公升": "L",
+        "匙": "さじ",
+    }
+    return mapping.get(normalized, normalized)
+
+
+def _enrich_ingredients_with_notes(ingredients: List[Dict[str, object]]) -> List[Dict[str, object]]:
+    enriched: List[Dict[str, object]] = []
+    for item in ingredients:
+        if not isinstance(item, dict):
+            continue
+        ingredient = dict(item)
+        existing_note = str(ingredient.get("note", "")).strip()
+        name = str(ingredient.get("name", "")).strip()
+        unit = _unit_to_japanese(str(ingredient.get("unit", "")).strip())
+        ingredient["unit"] = unit
+        if existing_note:
+            ingredient["note"] = existing_note
+        else:
+            ingredient["note"] = _ingredient_note(name, unit, ingredient.get("quantity"))
+        enriched.append(ingredient)
+    return enriched
 
 
 def _read_demo_cache(path: Path) -> Optional[List[Dict[str, object]]]:
@@ -203,7 +295,10 @@ def inject_alert_count():
     if user_id:
         expiry_alerts = fetch_expiry_alerts(user_id)
         alert_count = len(expiry_alerts)
-    return dict(alert_count=alert_count)
+    return dict(
+        alert_count=alert_count,
+        ingredient_note=_ingredient_note,
+    )
 
 
 @app.get("/")
@@ -271,6 +366,12 @@ def register():
     if get_user_by_username(username):
         return render_template("auth.html", error="ユーザー名は既に使われています")
 
+    if not _is_strong_password(password):
+        return render_template(
+            "auth.html",
+            error="パスワードは10文字以上で、英大文字・英小文字・数字・記号を含めてください",
+        )
+
     password_hash = generate_password_hash(password, method="pbkdf2:sha256")
     user_id = create_user(username, password_hash)
     session["user_id"] = user_id
@@ -279,8 +380,8 @@ def register():
 
 @app.post("/login")
 def login():
-    username = request.form.get("username", "").strip()
-    password = request.form.get("password", "").strip()
+    username = request.form.get("login_username", request.form.get("username", "")).strip()
+    password = request.form.get("login_password", request.form.get("password", "")).strip()
 
     user = get_user_by_username(username)
     if not user or not check_password_hash(user["password_hash"], password):
@@ -312,8 +413,8 @@ def mobile_login():
 
 @app.post("/m/login")
 def mobile_login_post():
-    username = request.form.get("username", "").strip()
-    password = request.form.get("password", "").strip()
+    username = request.form.get("login_username", request.form.get("username", "")).strip()
+    password = request.form.get("login_password", request.form.get("password", "")).strip()
 
     user = get_user_by_username(username)
     if not user or not check_password_hash(user["password_hash"], password):
@@ -410,8 +511,7 @@ def _mock_recognize(filename: str) -> List[Dict[str, str]]:
 @app.get("/recognize")
 @login_required
 def recognize():
-    items = session.get("recognize_items", [])
-    return render_template("recognize.html", items=items, user=current_user())
+    return redirect(url_for("vision"))
 
 
 @app.post("/recognize")
@@ -756,14 +856,18 @@ def recipes():
         match_score = max(0, min(60, int(match_rate * 60) - missing_required * 8))
         total_score = match_score + health_score
 
-        if total_score >= 85:
-            grade = "A"
+        if total_score >= 90:
+            grade = "SSS"
+        elif total_score >= 80:
+            grade = "SS"
         elif total_score >= 70:
+            grade = "S"
+        elif total_score >= 60:
+            grade = "A"
+        elif total_score >= 50:
             grade = "B"
-        elif total_score >= 55:
-            grade = "C"
         else:
-            grade = "D"
+            grade = "C"
 
         recipes_data.append(
             {
@@ -857,7 +961,7 @@ def recipe_detail(recipe_id: int):
     user_id = session["user_id"]
     pantry_items = fetch_pantry_items(user_id)
     pantry_names = {item["name"] for item in pantry_items}
-    ingredients = json.loads(recipe["ingredients_json"])
+    ingredients = _enrich_ingredients_with_notes(json.loads(recipe["ingredients_json"]))
     matched_ingredients = [ing for ing in ingredients if ing["name"] in pantry_names]
     match_rate = int((len(matched_ingredients) / len(ingredients) * 100) if ingredients else 0)
 

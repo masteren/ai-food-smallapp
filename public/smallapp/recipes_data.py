@@ -55,7 +55,7 @@ INTERNATIONAL_RECIPES = [
         "description": "日式チキンフライ",
         "ingredients": [
             {"name": "鶏もも肉", "quantity": 400, "unit": "g"},
-            {"name": "醤油", "quantity": 3, "unit": "汤匙"},
+            {"name": "醤油", "quantity": 3, "unit": "大さじ"},
         ],
         "steps": [
             "鶏肉を醤油に浸す",
@@ -85,7 +85,7 @@ INTERNATIONAL_RECIPES = [
         "region": "日本",
         "description": "最も基本的な日本式スープ",
         "ingredients": [
-            {"name": "味噌", "quantity": 2, "unit": "汤匙"},
+            {"name": "味噌", "quantity": 2, "unit": "大さじ"},
             {"name": "豆腐", "quantity": 150, "unit": "g"},
             {"name": "昆布", "quantity": 5, "unit": "g"},
         ],
@@ -102,7 +102,7 @@ INTERNATIONAL_RECIPES = [
         "description": "甘辛い味わい、ご飯に合う",
         "ingredients": [
             {"name": "鶏肉", "quantity": 300, "unit": "g"},
-            {"name": "てり焼きソース", "quantity": 4, "unit": "汤匙"},
+            {"name": "てり焼きソース", "quantity": 4, "unit": "大さじ"},
         ],
         "steps": [
             "鶏肉を両面焼く",
@@ -116,9 +116,9 @@ INTERNATIONAL_RECIPES = [
         "region": "日本",
         "description": "日本洋食の代表",
         "ingredients": [
-            {"name": "米飯", "quantity": 2, "unit": "碗"},
+            {"name": "米飯", "quantity": 2, "unit": "杯"},
             {"name": "鶏卵", "quantity": 3, "unit": "個"},
-            {"name": "トマトソース", "quantity": 2, "unit": "汤匙"},
+            {"name": "トマトソース", "quantity": 2, "unit": "大さじ"},
         ],
         "steps": [
             "トマトソースでご飯を炒める",
@@ -133,7 +133,7 @@ INTERNATIONAL_RECIPES = [
         "region": "中国",
         "description": "世界で最も有名な中式の簡単料理、ご飯の最適な使い方",
         "ingredients": [
-            {"name": "米飯", "quantity": 2, "unit": "碗"},
+            {"name": "米飯", "quantity": 2, "unit": "杯"},
             {"name": "鶏卵", "quantity": 2, "unit": "個"},
             {"name": "ネギ", "quantity": 2, "unit": "本"},
         ],
@@ -151,7 +151,7 @@ INTERNATIONAL_RECIPES = [
         "ingredients": [
             {"name": "豆腐", "quantity": 400, "unit": "g"},
             {"name": "豚ひき肉", "quantity": 150, "unit": "g"},
-            {"name": "辛味噌", "quantity": 2, "unit": "汤匙"},
+            {"name": "辛味噌", "quantity": 2, "unit": "大さじ"},
         ],
         "steps": [
             "豆腐をカットして湯通し、水気を切る",
@@ -213,7 +213,7 @@ INTERNATIONAL_RECIPES = [
         "ingredients": [
             {"name": "麺", "quantity": 300, "unit": "g"},
             {"name": "ひき肉", "quantity": 150, "unit": "g"},
-            {"name": "豆板醤", "quantity": 3, "unit": "汤匙"},
+            {"name": "豆板醤", "quantity": 3, "unit": "大さじ"},
         ],
         "steps": [
             "ひき肉を炒めて豆板醤を加える",
@@ -229,7 +229,7 @@ INTERNATIONAL_RECIPES = [
         "ingredients": [
             {"name": "豆腐", "quantity": 200, "unit": "g"},
             {"name": "鶏卵", "quantity": 1, "unit": "個"},
-            {"name": "酢", "quantity": 2, "unit": "汤匙"},
+            {"name": "酢", "quantity": 2, "unit": "大さじ"},
             {"name": "唐辛子", "quantity": 1, "unit": "個"},
         ],
         "steps": [
@@ -260,9 +260,9 @@ INTERNATIONAL_RECIPES = [
         "region": "韓国",
         "description": "栄養バランスの良い混ぜご飯",
         "ingredients": [
-            {"name": "米飯", "quantity": 2, "unit": "碗"},
+            {"name": "米飯", "quantity": 2, "unit": "杯"},
             {"name": "野菜", "quantity": 200, "unit": "g"},
-            {"name": "コチュジャン", "quantity": 2, "unit": "汤匙"},
+            {"name": "コチュジャン", "quantity": 2, "unit": "大さじ"},
         ],
         "steps": [
             "野菜を細切りにして別々に炒めるか湯通しする",
@@ -292,7 +292,7 @@ INTERNATIONAL_RECIPES = [
         "region": "韓国",
         "description": "辛味が爽やか",
         "ingredients": [
-            {"name": "米飯", "quantity": 2, "unit": "碗"},
+            {"name": "米飯", "quantity": 2, "unit": "杯"},
             {"name": "キムチ", "quantity": 150, "unit": "g"},
             {"name": "鶏卵", "quantity": 1, "unit": "個"},
         ],
@@ -309,7 +309,7 @@ INTERNATIONAL_RECIPES = [
         "description": "ストリートフードの名物",
         "ingredients": [
             {"name": "年糕", "quantity": 300, "unit": "g"},
-            {"name": "コチュジャン", "quantity": 3, "unit": "汤匙"},
+            {"name": "コチュジャン", "quantity": 3, "unit": "大さじ"},
         ],
         "steps": [
             "年糕をお湯で柔らかく",
@@ -373,7 +373,7 @@ INTERNATIONAL_RECIPES = [
         "ingredients": [
             {"name": "パスタ", "quantity": 300, "unit": "g"},
             {"name": "ニンニク", "quantity": 4, "unit": "片"},
-            {"name": "オリーブオイル", "quantity": 4, "unit": "汤匙"},
+            {"name": "オリーブオイル", "quantity": 4, "unit": "大さじ"},
         ],
         "steps": [
             "オリーブオイルでニンニクを炒める",
@@ -388,7 +388,7 @@ INTERNATIONAL_RECIPES = [
         "description": "家庭版ピザ",
         "ingredients": [
             {"name": "ピザ生地", "quantity": 1, "unit": "枚"},
-            {"name": "トマトソース", "quantity": 3, "unit": "汤匙"},
+            {"name": "トマトソース", "quantity": 3, "unit": "大さじ"},
             {"name": "チーズ", "quantity": 100, "unit": "g"},
         ],
         "steps": [
@@ -436,7 +436,7 @@ INTERNATIONAL_RECIPES = [
         "description": "なめらかな食感",
         "ingredients": [
             {"name": "鶏卵", "quantity": 3, "unit": "個"},
-            {"name": "バター", "quantity": 2, "unit": "汤匙"},
+            {"name": "バター", "quantity": 2, "unit": "大さじ"},
         ],
         "steps": [
             "卵液を混ぜる",
@@ -484,7 +484,7 @@ INTERNATIONAL_RECIPES = [
         "ingredients": [
             {"name": "エビ", "quantity": 300, "unit": "g"},
             {"name": "ニンニク", "quantity": 6, "unit": "片"},
-            {"name": "オリーブオイル", "quantity": 3, "unit": "汤匙"},
+            {"name": "オリーブオイル", "quantity": 3, "unit": "大さじ"},
         ],
         "steps": [
             "ニンニクを切る",
@@ -561,8 +561,8 @@ INTERNATIONAL_RECIPES = [
         "description": "重い味のどんぶり",
         "ingredients": [
             {"name": "牛肉", "quantity": 300, "unit": "g"},
-            {"name": "米", "quantity": 2, "unit": "碗"},
-            {"name": "スパイス", "quantity": 2, "unit": "汤匙"},
+            {"name": "米", "quantity": 2, "unit": "杯"},
+            {"name": "スパイス", "quantity": 2, "unit": "大さじ"},
         ],
         "steps": [
             "牛肉を炒めて色が変わるまで",
@@ -577,7 +577,7 @@ INTERNATIONAL_RECIPES = [
         "description": "爽やかな付け合わせ",
         "ingredients": [
             {"name": "トウモロコシ", "quantity": 200, "unit": "g"},
-            {"name": "コチュジャン", "quantity": 1, "unit": "汤匙"},
+            {"name": "コチュジャン", "quantity": 1, "unit": "大さじ"},
         ],
         "steps": [
             "トウモロコシを茹でて水を切る",
@@ -638,7 +638,7 @@ INTERNATIONAL_RECIPES = [
         "description": "家庭版バーベキュー",
         "ingredients": [
             {"name": "豚肋骨", "quantity": 600, "unit": "g"},
-            {"name": "ソース", "quantity": 4, "unit": "汤匙"},
+            {"name": "ソース", "quantity": 4, "unit": "大さじ"},
         ],
         "steps": [
             "肋骨にソースをコーティング",
@@ -683,9 +683,9 @@ INTERNATIONAL_RECIPES = [
         "region": "タイ",
         "description": "香り高い",
         "ingredients": [
-            {"name": "米飯", "quantity": 2, "unit": "碗"},
+            {"name": "米飯", "quantity": 2, "unit": "杯"},
             {"name": "鶏卵", "quantity": 1, "unit": "個"},
-            {"name": "スパイス", "quantity": 2, "unit": "汤匙"},
+            {"name": "スパイス", "quantity": 2, "unit": "大さじ"},
         ],
         "steps": [
             "卵を半熟まで炒めて盛り出す",
@@ -699,7 +699,7 @@ INTERNATIONAL_RECIPES = [
         "region": "タイ",
         "description": "ココナッツの香りが辛い",
         "ingredients": [
-            {"name": "カレーペースト", "quantity": 3, "unit": "汤匙"},
+            {"name": "カレーペースト", "quantity": 3, "unit": "大さじ"},
             {"name": "鶏肉", "quantity": 300, "unit": "g"},
         ],
         "steps": [
@@ -732,7 +732,7 @@ INTERNATIONAL_RECIPES = [
         "description": "一鍋で完成",
         "ingredients": [
             {"name": "鶏腿", "quantity": 500, "unit": "g"},
-            {"name": "米", "quantity": 2, "unit": "碗"},
+            {"name": "米", "quantity": 2, "unit": "杯"},
         ],
         "steps": [
             "鶏腿を出汁で煮込む",
@@ -747,7 +747,7 @@ INTERNATIONAL_RECIPES = [
         "description": "カレーの風味",
         "ingredients": [
             {"name": "米粉", "quantity": 300, "unit": "g"},
-            {"name": "カレー粉", "quantity": 2, "unit": "汤匙"},
+            {"name": "カレー粉", "quantity": 2, "unit": "大さじ"},
         ],
         "steps": [
             "カレー粉を香りが出るまで炒める",

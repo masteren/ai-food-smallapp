@@ -22,7 +22,7 @@
             留学生・一人暮らし向けに、時短と健康を両立。
           </p>
           <div class="u-mt12 helper">
-            デモログイン: <kbd>demo</kbd> / <kbd>demo1234</kbd>
+            デモログイン: <kbd>demo</kbd> / <kbd>PantryDemo!2026</kbd>
           </div>
         </div>
 
@@ -41,11 +41,11 @@
           <p class="helper">{{ error }}</p>
         {% endif %}
 
-        <form class="form" method="post" action="/login">
+        <form class="form" method="post" action="/login" autocomplete="off">
           <label>ユーザー名</label>
-          <input name="username" placeholder="demo" required />
+          <input name="login_username" placeholder="ユーザー名" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');" required />
           <label>パスワード</label>
-          <input name="password" type="password" placeholder="••••••••" required />
+          <input name="login_password" type="password" placeholder="••••••••" autocomplete="current-password" readonly onfocus="this.removeAttribute('readonly');" required />
           <div class="smallrow">
             <label style="display:flex; gap:10px; align-items:center;">
               <input type="checkbox" style="width:auto;"> <span class="helper">ログイン状態を保持</span>
@@ -59,11 +59,11 @@
 
         <h2 style="margin:0; font-size:20px;">新規登録</h2>
         <p class="helper">デモ用に簡易登録できます。</p>
-        <form class="form" method="post" action="/register">
+        <form class="form" method="post" action="/register" autocomplete="on">
           <label>ユーザー名</label>
-          <input name="username" placeholder="new-user" required />
+          <input name="username" placeholder="new-user" autocomplete="username" required />
           <label>パスワード</label>
-          <input name="password" type="password" placeholder="••••••••" required />
+          <input name="password" type="password" placeholder="10文字以上（英大/英小/数字/記号）" autocomplete="new-password" required />
           <button class="btn block" type="submit">登録する</button>
           <div class="hr"></div>
           <a class="btn block" href="{{ url_for('home') }}">ゲストとして入る</a>

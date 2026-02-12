@@ -82,7 +82,7 @@ kbd{
   border-bottom:1px solid var(--stroke);
   background: linear-gradient(180deg, rgba(10,14,28,.75), rgba(10,14,28,.45));
   backdrop-filter: blur(14px);
-  overflow: hidden;
+  overflow: visible;
 }
 .topbar::before{
   content:"";
@@ -124,11 +124,15 @@ kbd{
   max-width: 760px;
 }
 .search .field{
+  position: relative;
   flex:1; display:flex; align-items:center; gap:10px;
   padding:10px 12px;
   border-radius: 14px;
   background: rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.20);
+}
+.search .field:focus-within{
+  z-index: 120;
 }
 .search input{
   width:100%; border:0; outline:0; background:transparent;
@@ -137,6 +141,36 @@ kbd{
 }
 .search input::placeholder{
   color: rgba(255,255,255,.58);
+}
+.search-suggest{
+  position:absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 130;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.20);
+  background: rgba(18, 24, 44, .94);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 16px 36px rgba(0,0,0,.35);
+}
+.search-suggest-item{
+  width: 100%;
+  display: block;
+  text-align: left;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255,255,255,.92);
+  font-size: 15px;
+  cursor: pointer;
+}
+.search-suggest-item:hover,
+.search-suggest-item.is-active{
+  background: rgba(53,246,255,.14);
+  color: #fff;
 }
 .pills{display:flex; gap:8px; flex-wrap:wrap}
 .pill{
@@ -383,11 +417,14 @@ kbd{
 .tag b{color: var(--txt); font-weight:600}
 .score{
   display:inline-flex; align-items:center; justify-content:center;
-  width:34px; height:34px; border-radius: 12px;
+  min-width:34px; height:34px; padding:0 10px; border-radius: 12px;
   font-weight:800;
   border:1px solid rgba(255,255,255,.14);
   background: rgba(255,255,255,.06);
 }
+.score.SSS{border-color: rgba(255,215,110,.55); background: rgba(255,215,110,.16)}
+.score.SS{border-color: rgba(255,228,148,.48); background: rgba(255,228,148,.14)}
+.score.S{border-color: rgba(48,255,168,.42); background: rgba(48,255,168,.14)}
 .score.A{border-color: rgba(48,255,168,.38); background: rgba(48,255,168,.12)}
 .score.B{border-color: rgba(53,246,255,.36); background: rgba(53,246,255,.10)}
 .score.C{border-color: rgba(255,193,77,.36); background: rgba(255,193,77,.10)}

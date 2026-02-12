@@ -28,11 +28,8 @@
             <span class="dot"></span> ホーム
           </a>
           {% if user %}
-            <a href="{{ url_for('recognize') }}" class="{% if active=='recognize' %}active{% endif %}">
-              <span class="dot violet"></span> AI認識
-            </a>
             <a href="{{ url_for('vision') }}" class="{% if active=='vision' %}active{% endif %}">
-              <span class="dot violet"></span> AI認識(API)
+              <span class="dot violet"></span> AI認識
             </a>
             <a href="{{ url_for('pantry') }}" class="{% if active=='pantry' %}active{% endif %}">
               <span class="dot green"></span> 所持食材
@@ -93,11 +90,12 @@
         </a>
 
         <div class="search">
-          <form method="get" action="{{ url_for('search') }}" style="width: 100%; display: flex; align-items: center;">
+          <form method="get" action="{{ url_for('search') }}" autocomplete="off" style="width: 100%; display: flex; align-items: center;">
             <div class="field">
               <span style="opacity:.75;">⌕</span>
-              <input name="q" placeholder="レシピを検索（例：蒸し焼き / 丼 / スープ）" type="search" enterkeyhint="search" />
+              <input id="searchInput" name="q" placeholder="食材名・料理名を入力（例：鶏むね肉、スープ、丼）" type="search" enterkeyhint="search" autocomplete="off" />
               <span class="pill">Enter</span>
+              <div class="search-suggest" id="searchSuggest" hidden></div>
             </div>
           </form>
           <div class="pills"></div>
@@ -118,6 +116,89 @@
       </div>
     </main>
   </div>
+
+  <script>
+    (function () {
+      const input = document.getElementById("searchInput");
+      const panel = document.getElementById("searchSuggest");
+      if (!input || !panel) return;
+
+      const suggestions = ["鶏むね肉", "卵", "豆腐", "ブロッコリー", "味噌汁", "スープ", "丼", "パスタ"];
+      let activeIndex = -1;
+
+      function filterSuggestions(query) {
+        const q = query.trim().toLowerCase();
+        if (!q) return suggestions.slice(0, 8);
+        return suggestions.filter((item) => item.toLowerCase().includes(q)).slice(0, 8);
+      }
+
+      function closePanel() {
+        panel.hidden = true;
+        panel.innerHTML = "";
+        activeIndex = -1;
+      }
+
+      function applyActive(items) {
+        const nodes = panel.querySelectorAll(".search-suggest-item");
+        nodes.forEach((n, i) => n.classList.toggle("is-active", i === activeIndex));
+        if (activeIndex >= 0 && items[activeIndex]) {
+          input.value = items[activeIndex];
+        }
+      }
+
+      function render(items) {
+        if (!items.length) {
+          closePanel();
+          return;
+        }
+        panel.innerHTML = items
+          .map((item) => '<button class="search-suggest-item" type="button">' + item + "</button>")
+          .join("");
+        panel.hidden = false;
+        panel.querySelectorAll(".search-suggest-item").forEach((btn, index) => {
+          btn.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            input.value = items[index];
+            closePanel();
+          });
+        });
+      }
+
+      input.addEventListener("focus", () => render(filterSuggestions(input.value)));
+      input.addEventListener("input", () => {
+        activeIndex = -1;
+        render(filterSuggestions(input.value));
+      });
+
+      input.addEventListener("keydown", (e) => {
+        const items = filterSuggestions(input.value);
+        if (!items.length || panel.hidden) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          activeIndex = (activeIndex + 1) % items.length;
+          applyActive(items);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          activeIndex = (activeIndex - 1 + items.length) % items.length;
+          applyActive(items);
+        } else if (e.key === "Enter") {
+          if (activeIndex >= 0 && items[activeIndex]) {
+            e.preventDefault();
+            input.value = items[activeIndex];
+            closePanel();
+          }
+        } else if (e.key === "Escape") {
+          closePanel();
+        }
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!panel.contains(e.target) && e.target !== input) {
+          closePanel();
+        }
+      });
+    })();
+  </script>
 
   {% block scripts %}{% endblock %}
 </body>

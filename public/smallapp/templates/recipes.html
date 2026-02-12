@@ -28,11 +28,11 @@
 
   <div class="grid cols-3">
     {% for r in recipes or [
-      {'id':1,'name':'鶏むね肉の塩レモン','time':'15分','lvl':'★☆☆','score':'B','tags':['高タンパク','時短']},
+      {'id':1,'name':'鶏むね肉の塩レモン','time':'15分','lvl':'★☆☆','score':'S','tags':['高タンパク','時短']},
       {'id':2,'name':'卵と野菜のスープ','time':'10分','lvl':'★☆☆','score':'A','tags':['野菜補給','低脂質']},
-      {'id':3,'name':'ツナ豆腐ボウル','time':'7分','lvl':'★☆☆','score':'B','tags':['洗い物少','時短']},
-      {'id':4,'name':'ブロッコリー胡麻和え','time':'8分','lvl':'★☆☆','score':'A','tags':['食物繊維','副菜']},
-      {'id':5,'name':'牛乳オートミール','time':'5分','lvl':'★☆☆','score':'C','tags':['朝食','糖質']},
+      {'id':3,'name':'ツナ豆腐ボウル','time':'7分','lvl':'★☆☆','score':'SS','tags':['洗い物少','時短']},
+      {'id':4,'name':'ブロッコリー胡麻和え','time':'8分','lvl':'★☆☆','score':'SSS','tags':['食物繊維','副菜']},
+      {'id':5,'name':'牛乳オートミール','time':'5分','lvl':'★☆☆','score':'B','tags':['朝食','糖質']},
       {'id':6,'name':'卵チャーハン（控えめ油）','time':'12分','lvl':'★★☆','score':'C','tags':['満腹','調整可']}
     ] %}
       <a class="card" href="{{ url_for('recipe_detail', recipe_id=r.id) }}">

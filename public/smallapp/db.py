@@ -127,7 +127,7 @@ def seed_data(force: bool = False) -> None:
                 "INSERT INTO users (username, password_hash) VALUES (?, ?)",
                 (
                     "demo",
-                    "pbkdf2:sha256:1000000$0nVv9qO3JP71ILXS$401974b385d6b086d4dc74fa1ae28894a0341ee9b5517b809c73cad21da2d344",
+                    "pbkdf2:sha256:1000000$mO08SYCfA6bat5Rz$1e37265fe3d69e416465c71cb57d1f0dee2124e727c2e76e70ed1fa697038d3c",
                 ),
             )
             demo_user_id = conn.execute(
@@ -139,29 +139,8 @@ def seed_data(force: bool = False) -> None:
             conn.execute(
                 "UPDATE users SET password_hash = ? WHERE id = ?",
                 (
-                    "pbkdf2:sha256:1000000$0nVv9qO3JP71ILXS$401974b385d6b086d4dc74fa1ae28894a0341ee9b5517b809c73cad21da2d344",
+                    "pbkdf2:sha256:1000000$mO08SYCfA6bat5Rz$1e37265fe3d69e416465c71cb57d1f0dee2124e727c2e76e70ed1fa697038d3c",
                     demo_user_id,
-                ),
-            )
-
-        new_user = conn.execute(
-            "SELECT id FROM users WHERE username = ?",
-            ("newone",),
-        ).fetchone()
-        if new_user is None:
-            conn.execute(
-                "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-                (
-                    "newone",
-                    "pbkdf2:sha256:1000000$lLhtdkq6Pt8yXZyN$de7590a562dad6787e3516dc5dfa14446f748643e9e9f067b77f51d80c071968",
-                ),
-            )
-        else:
-            conn.execute(
-                "UPDATE users SET password_hash = ? WHERE id = ?",
-                (
-                    "pbkdf2:sha256:1000000$lLhtdkq6Pt8yXZyN$de7590a562dad6787e3516dc5dfa14446f748643e9e9f067b77f51d80c071968",
-                    new_user["id"],
                 ),
             )
 

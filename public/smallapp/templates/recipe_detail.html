@@ -93,7 +93,7 @@
                 <tr>
                   <td>{{ ing.name }}</td>
                   <td class="muted">{{ ing.quantity }}{{ ing.unit }}</td>
-                  <td class="muted">—</td>
+                  <td class="muted">{{ ing.note or ingredient_note(ing.name, ing.unit, ing.quantity) }}</td>
                 </tr>
               {% endfor %}
             {% else %}

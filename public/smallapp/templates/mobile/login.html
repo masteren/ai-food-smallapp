@@ -29,14 +29,14 @@
         {% if error %}
           <div class="mobile-alert" role="alert">{{ error }}</div>
         {% endif %}
-        <form class="form" method="post" action="{{ url_for('mobile_login_post') }}">
+        <form class="form" method="post" action="{{ url_for('mobile_login_post') }}" autocomplete="off">
           <label>ユーザー名</label>
-          <input name="username" placeholder="demo" required />
+          <input name="login_username" placeholder="ユーザー名" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');" required />
           <label>パスワード</label>
-          <input name="password" type="password" placeholder="••••••••" required />
+          <input name="login_password" type="password" placeholder="••••••••" autocomplete="current-password" readonly onfocus="this.removeAttribute('readonly');" required />
           <button class="btn primary block" type="submit">ログイン</button>
         </form>
-        <p class="helper u-mt12">デモログイン: <kbd>demo</kbd> / <kbd>demo1234</kbd></p>
+        <p class="helper u-mt12">デモログイン: <kbd>demo</kbd> / <kbd>PantryDemo!2026</kbd></p>
       </div>
     </section>
   </main>

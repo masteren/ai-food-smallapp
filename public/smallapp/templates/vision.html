@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% set title="AI認識(API) | AI Pantry OS" %}
+{% set title="AI認識 | AI Pantry OS" %}
 {% set active="vision" %}
-{% set header_title="AI認識(API)" %}
+{% set header_title="AI認識" %}
 {% set header_subtitle="画像アップロード → 食材JSON取得" %}
 {% set demo_labels = {'fridge':'冷蔵庫','cart':'買い物','table':'テーブル'} %}
 
@@ -12,7 +12,7 @@
       <p>画像をアップロードして、食材リストを取得します（API経由）。</p>
     </div>
     <div class="smallrow">
-      <a class="btn" href="{{ url_for('recognize') }}">既存の認識ページ</a>
+      <a class="btn" href="{{ url_for('vision') }}">AI認識ページ</a>
     </div>
   </div>
 

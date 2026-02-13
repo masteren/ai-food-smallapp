@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mobile Scan | AI Pantry OS</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
 </head>
 <body class="page mobile-page">
   <main class="mobile-shell">
@@ -17,9 +17,12 @@
           <small>Mobile Vision Scan</small>
         </div>
       </div>
-      <form method="post" action="{{ url_for('mobile_logout') }}">
-        <button class="btn small" type="submit">ログアウト</button>
-      </form>
+      <div class="mobile-top-actions">
+        <a class="btn small" href="{{ url_for('mobile_pantry') }}">在庫</a>
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
     </header>
 
     <section class="card mobile-card">
@@ -29,13 +32,16 @@
       </div>
       <div class="card-b">
         <div class="form">
-          <label>拍照/选择图片</label>
+          <label>写真を撮る／画像を選択</label>
           <input id="mobileImageInput" type="file" accept="image/*" capture="environment" />
+          <button id="mobileSampleToggleBtn" class="btn block" type="button">サンプル画像を使用</button>
+          <div id="mobileSampleList" class="mobile-sample-list is-hidden"></div>
           <div id="mobilePreview" class="mobile-preview" aria-live="polite">
             <span class="helper">画像プレビューがここに表示されます。</span>
           </div>
           <div class="mobile-actions">
             <button id="mobileScanBtn" class="btn primary block" type="button">AI認識</button>
+            <button id="mobileSaveBtn" class="btn block" type="button">認識結果を在庫へ追加</button>
           </div>
           <div class="mobile-status" aria-live="polite">
             <span id="mobileStatusText" class="helper">待機中</span>
@@ -59,6 +65,9 @@
     </section>
   </main>
 
-  <script src="{{ url_for('static', filename='mobile_scan.js') }}"></script>
+  <script>
+    window.mobileDemoCatalog = {{ (demo_catalog or [])|tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='mobile_scan.js', v=mobile_asset_v) }}"></script>
 </body>
 </html>

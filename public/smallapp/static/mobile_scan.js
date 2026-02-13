@@ -1,12 +1,17 @@
 const imageInput = document.getElementById('mobileImageInput');
 const previewWrap = document.getElementById('mobilePreview');
 const scanButton = document.getElementById('mobileScanBtn');
+const saveButton = document.getElementById('mobileSaveBtn');
+const sampleToggleButton = document.getElementById('mobileSampleToggleBtn');
+const sampleList = document.getElementById('mobileSampleList');
 const statusText = document.getElementById('mobileStatusText');
 const statusBadge = document.getElementById('mobileStatusBadge');
 const errorText = document.getElementById('mobileErrorText');
 const resultList = document.getElementById('mobileResultList');
 
 let selectedFile = null;
+let latestItems = [];
+let selectedSampleUrl = '';
 
 function setStatus(message, badgeText) {
   statusText.textContent = message;
@@ -29,6 +34,7 @@ function setError(message) {
 }
 
 function clearResults(message = 'まだ結果がありません。') {
+  latestItems = [];
   resultList.innerHTML = '';
   const item = document.createElement('li');
   item.className = 'mobile-result muted';
@@ -37,12 +43,13 @@ function clearResults(message = 'まだ結果がありません。') {
 }
 
 function renderResults(items) {
+  latestItems = Array.isArray(items) ? items : [];
   resultList.innerHTML = '';
-  if (!items || items.length === 0) {
+  if (!latestItems || latestItems.length === 0) {
     clearResults('検出結果がありません。');
     return;
   }
-  items.forEach((item) => {
+  latestItems.forEach((item) => {
     const li = document.createElement('li');
     li.className = 'mobile-result';
 
@@ -181,7 +188,8 @@ async function handleScan() {
       clearResults('結果を取得できませんでした。');
       return;
     }
-    setStatus(`取得完了: ${data.items.length} 件`, 'Live');
+    const badge = data.mock ? 'Mock' : 'Live';
+    setStatus(`取得完了: ${data.items.length} 件`, badge);
     renderResults(data.items);
   } catch (error) {
     setError('通信エラーが発生しました。');
@@ -192,14 +200,145 @@ async function handleScan() {
   }
 }
 
+async function handleSaveToPantry() {
+  setError('');
+  if (!latestItems.length) {
+    setError('先进行识别，再入库。');
+    setStatus('没有可入库的数据。', null);
+    return;
+  }
+
+  saveButton.disabled = true;
+  setStatus('入库中...', null);
+  try {
+    const response = await fetch('/api/mobile/pantry/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items: latestItems }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) {
+      setError(data.error || '入库失败。');
+      setStatus('入库失败。', null);
+      return;
+    }
+    setStatus(`已入库 ${data.saved} 件`, 'Saved');
+    setError('');
+  } catch (error) {
+    setError('入库请求失败，请稍后重试。');
+    setStatus('入库失败。', null);
+  } finally {
+    saveButton.disabled = false;
+  }
+}
+
+function flattenSampleImages(catalog) {
+  const images = [];
+  if (!Array.isArray(catalog)) {
+    return images;
+  }
+  catalog.forEach((group) => {
+    const key = group && group.key ? group.key : 'sample';
+    const list = Array.isArray(group && group.images) ? group.images : [];
+    list.forEach((url, index) => {
+      images.push({
+        url,
+        label: `${key}-${index + 1}`,
+      });
+    });
+  });
+  return images;
+}
+
+async function fetchSampleAsFile(url, label) {
+  const response = await fetch(url, { credentials: 'same-origin' });
+  if (!response.ok) {
+    throw new Error('sample_fetch_failed');
+  }
+  const blob = await response.blob();
+  const mimeType = blob.type || 'image/jpeg';
+  const ext = mimeType.includes('png') ? 'png' : 'jpg';
+  return new File([blob], `${label}.${ext}`, { type: mimeType });
+}
+
+function renderSampleList() {
+  if (!sampleList) {
+    return;
+  }
+  const catalog = window.mobileDemoCatalog || [];
+  const images = flattenSampleImages(catalog);
+  sampleList.innerHTML = '';
+
+  if (!images.length) {
+    const empty = document.createElement('div');
+    empty.className = 'helper';
+    empty.textContent = '暂无 sample 图片。';
+    sampleList.appendChild(empty);
+    return;
+  }
+
+  images.slice(0, 18).forEach((item) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mobile-sample-btn';
+    if (item.url === selectedSampleUrl) {
+      btn.classList.add('is-selected');
+    }
+
+    const img = document.createElement('img');
+    img.src = item.url;
+    img.alt = item.label;
+    img.loading = 'lazy';
+
+    const text = document.createElement('span');
+    text.textContent = item.label;
+
+    btn.appendChild(img);
+    btn.appendChild(text);
+    btn.addEventListener('click', async () => {
+      try {
+        setError('');
+        setStatus('加载 sample 中...', null);
+        const sampleFile = await fetchSampleAsFile(item.url, item.label);
+        selectedSampleUrl = item.url;
+        selectedFile = sampleFile;
+        setPreview(selectedFile);
+        clearResults();
+        setStatus(`已选择 sample: ${item.label}`, 'Sample');
+        renderSampleList();
+      } catch (error) {
+        setError('sample 加载失败。');
+        setStatus('sample 加载失败。', null);
+      }
+    });
+
+    sampleList.appendChild(btn);
+  });
+}
+
+function toggleSampleList() {
+  if (!sampleList) {
+    return;
+  }
+  sampleList.classList.toggle('is-hidden');
+  const open = !sampleList.classList.contains('is-hidden');
+  if (sampleToggleButton) {
+    sampleToggleButton.textContent = open ? '收起 Sample' : '使用 Sample 图片';
+  }
+}
+
 if (imageInput) {
   imageInput.addEventListener('change', (event) => {
     const file = event.target.files && event.target.files[0];
     selectedFile = file || null;
+    selectedSampleUrl = '';
     setPreview(selectedFile);
     setStatus('待機中', null);
     setError('');
     clearResults();
+    renderSampleList();
   });
 }
 
@@ -207,4 +346,13 @@ if (scanButton) {
   scanButton.addEventListener('click', handleScan);
 }
 
+if (saveButton) {
+  saveButton.addEventListener('click', handleSaveToPantry);
+}
+
+if (sampleToggleButton) {
+  sampleToggleButton.addEventListener('click', toggleSampleList);
+}
+
 clearResults();
+renderSampleList();

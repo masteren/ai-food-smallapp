@@ -62,11 +62,12 @@ def recognize_ingredients_from_bytes(
                                     "type": "object",
                                     "properties": {
                                         "name": {"type": "string"},
+                                        "name_en": {"type": ["string", "null"]},
                                         "quantity": {"type": ["number", "null"]},
                                         "confidence": {"type": ["number", "null"]},
                                         "unit": {"type": ["string", "null"]},
                                     },
-                                    "required": ["name", "quantity", "confidence", "unit"],
+                                    "required": ["name", "name_en", "quantity", "confidence", "unit"],
                                     "additionalProperties": False,
                                 },
                             }
@@ -84,6 +85,10 @@ def recognize_ingredients_from_bytes(
                             "type": "input_text",
                             "text": (
                                 "画像内の食材を識別してください。"
+                                " 必ず JSON の name は日本語名で返してください。"
+                                " 英語名は name_en に入れてください。"
+                                " 日本語名が不明な場合のみ name と name_en を同じ値にしてください。"
+                                " unit は可能なら日本語または一般的な単位記号（個, 本, 枚, g, kg, ml, L）で返してください。"
                             ),
                         },
                         {"type": "input_image", "image_url": data_url},
@@ -117,12 +122,18 @@ def recognize_ingredients_from_bytes(
             continue
         quantity = _normalize_number(item.get("quantity"))
         confidence = _normalize_number(item.get("confidence"))
+        name_en = str(item.get("name_en", "")).strip()
+        unit = str(item.get("unit", "")).strip()
 
-        entry: Dict[str, Any] = {"name": name}
+        entry: Dict[str, Any] = {"name": name, "name_ja": name}
+        if name_en:
+            entry["name_en"] = name_en
         if quantity is not None:
             entry["quantity"] = quantity
         if confidence is not None:
             entry["confidence"] = confidence
+        if unit:
+            entry["unit"] = unit
         results.append(entry)
 
     return results

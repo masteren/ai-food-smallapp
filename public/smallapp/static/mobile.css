@@ -2,6 +2,15 @@
   min-height:100vh;
 }
 
+/* Keep mobile content above global background overlays */
+body.mobile-page::before{
+  z-index: -2;
+}
+
+body.mobile-page::after{
+  z-index: -1;
+}
+
 .mobile-shell{
   width:100%;
   max-width:560px;
@@ -10,6 +19,8 @@
   display:flex;
   flex-direction:column;
   gap:16px;
+  position: relative;
+  z-index: 2;
 }
 
 .mobile-topbar{
@@ -17,6 +28,12 @@
   align-items:center;
   justify-content:space-between;
   gap:12px;
+}
+
+.mobile-top-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
 
 .mobile-topbar .brand{
@@ -57,6 +74,46 @@
   display:flex;
   flex-direction:column;
   gap:10px;
+}
+
+.mobile-sample-list{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:8px;
+}
+
+.mobile-sample-list.is-hidden{
+  display:none;
+}
+
+.mobile-sample-btn{
+  border:1px solid rgba(255,255,255,.24);
+  border-radius: 12px;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.92);
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:flex-start;
+  text-align:left;
+}
+
+.mobile-sample-btn img{
+  width:100%;
+  height:72px;
+  object-fit:cover;
+  border-radius: 8px;
+  display:block;
+}
+
+.mobile-sample-btn span{
+  font-size:12px;
+}
+
+.mobile-sample-btn.is-selected{
+  border-color: rgba(53,246,255,.55);
+  box-shadow: 0 0 0 2px rgba(53,246,255,.18) inset;
 }
 
 .mobile-status{
@@ -131,4 +188,132 @@
     flex-direction:column;
     align-items:flex-start;
   }
+  .mobile-top-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+}
+
+/* High-contrast overrides for mobile readability on busy backgrounds */
+body.mobile-page::after{
+  background: linear-gradient(180deg, rgba(7,10,18,.42), rgba(7,10,18,.56));
+}
+
+.mobile-page{
+  --txt: rgba(255,255,255,.98);
+  --muted: rgba(255,255,255,.88);
+  --muted2: rgba(255,255,255,.78);
+  --input-text: rgba(255,255,255,.96);
+  --input-placeholder: rgba(255,255,255,.70);
+  font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
+    "Noto Sans JP", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.mobile-page .mobile-shell{
+  padding-top: max(20px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.mobile-page .card{
+  background: linear-gradient(180deg, rgba(8,12,24,.90), rgba(8,12,24,.84));
+  border-color: rgba(255,255,255,.24);
+}
+
+.mobile-page .card .card-h{
+  border-bottom-color: rgba(255,255,255,.16);
+}
+
+.mobile-page .card .card-h h3{
+  color:#fff;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.mobile-page .brand h1{
+  color:#fff;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.mobile-page .brand small,
+.mobile-page .helper,
+.mobile-page .form label{
+  color: rgba(255,255,255,.90);
+}
+
+.mobile-page .brand small{
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.mobile-page .helper{
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.mobile-page .form label{
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+.mobile-page .form input,
+.mobile-page .form select{
+  color: rgba(255,255,255,.96);
+  border-color: rgba(255,255,255,.26);
+  background: rgba(5,8,16,.64);
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.mobile-page .form input::placeholder,
+.mobile-page .form select::placeholder{
+  color: rgba(255,255,255,.78);
+  font-weight: 500;
+}
+
+.mobile-page .btn{
+  border-color: rgba(255,255,255,.24);
+  background: rgba(255,255,255,.10);
+  font-size: 1.2rem;
+  font-weight: 800;
+  min-height: 54px;
+}
+
+.mobile-page .btn.primary{
+  border-color: rgba(53,246,255,.46);
+  background: linear-gradient(90deg, rgba(53,246,255,.30), rgba(139,92,255,.20));
+}
+
+.mobile-page .mobile-preview{
+  border-color: rgba(255,255,255,.30);
+  background: rgba(5,8,16,.50);
+}
+
+.mobile-page .mobile-result{
+  border-color: rgba(255,255,255,.22);
+  background: rgba(5,8,16,.46);
+}
+
+.mobile-page .card .card-h small,
+.mobile-page .mobile-result small{
+  color: rgba(255,255,255,.84);
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.mobile-page .mobile-result .confidence{
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.mobile-page kbd{
+  color: rgba(255,255,255,.92);
+  border-color: rgba(255,255,255,.30);
+  background: rgba(255,255,255,.12);
 }

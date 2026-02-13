@@ -51,6 +51,7 @@ DEMO_IMAGE_GROUPS: Tuple[Tuple[str, str], ...] = (
     ("table", "table"),
 )
 DEMO_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+DEMO_CACHE_VERSION = "v2-ja"
 
 
 with app.app_context():
@@ -104,7 +105,7 @@ def _build_demo_catalog() -> List[Dict[str, List[str]]]:
 
 
 def _demo_cache_path(image_bytes: bytes) -> Path:
-    digest = hashlib.sha256(image_bytes).hexdigest()
+    digest = hashlib.sha256(f"{DEMO_CACHE_VERSION}:".encode("utf-8") + image_bytes).hexdigest()
     cache_dir = Path(app.root_path) / "static" / "demo_cache"
     return cache_dir / f"{digest}.json"
 
@@ -295,13 +296,35 @@ def inject_alert_count():
     if user_id:
         expiry_alerts = fetch_expiry_alerts(user_id)
         alert_count = len(expiry_alerts)
+    style_path = Path(app.root_path) / "static" / "style.css"
+    mobile_style_path = Path(app.root_path) / "static" / "mobile.css"
+    mobile_scan_path = Path(app.root_path) / "static" / "mobile_scan.js"
+    try:
+        asset_v = str(int(style_path.stat().st_mtime))
+        mobile_asset_v = str(
+            max(
+                int(style_path.stat().st_mtime),
+                int(mobile_style_path.stat().st_mtime),
+                int(mobile_scan_path.stat().st_mtime),
+            )
+        )
+    except OSError:
+        asset_v = "1"
+        mobile_asset_v = "1"
     return dict(
         alert_count=alert_count,
         ingredient_note=_ingredient_note,
+        asset_v=asset_v,
+        mobile_asset_v=mobile_asset_v,
     )
 
 
 @app.get("/")
+def start():
+    return render_template("start.html")
+
+
+@app.get("/home")
 def home():
     # Get overview stats for home page
     user_id = session.get("user_id")
@@ -433,13 +456,46 @@ def mobile_logout():
 @app.get("/m/home")
 @mobile_login_required
 def mobile_home():
-    return render_template("mobile/scan.html", user=current_user())
+    demo_catalog = _build_demo_catalog()
+    return render_template("mobile/scan.html", user=current_user(), demo_catalog=demo_catalog)
 
 
 @app.get("/m/scan")
 @mobile_login_required
 def mobile_scan():
-    return render_template("mobile/scan.html", user=current_user())
+    demo_catalog = _build_demo_catalog()
+    return render_template("mobile/scan.html", user=current_user(), demo_catalog=demo_catalog)
+
+
+@app.get("/m/pantry")
+@mobile_login_required
+def mobile_pantry():
+    items = fetch_pantry_items(session["user_id"])
+    return render_template("mobile/pantry.html", user=current_user(), items=items)
+
+
+@app.post("/m/pantry/add")
+@mobile_login_required
+def mobile_pantry_add():
+    name = request.form.get("name", "").strip()
+    quantity_raw = request.form.get("quantity", "").strip()
+    unit = request.form.get("unit", "").strip() or "個"
+    if name and quantity_raw.isdigit():
+        upsert_pantry_item(
+            session["user_id"],
+            name,
+            int(quantity_raw),
+            unit,
+            date.today().isoformat(),
+        )
+    return redirect(url_for("mobile_pantry"))
+
+
+@app.post("/m/pantry/delete/<int:item_id>")
+@mobile_login_required
+def mobile_pantry_delete(item_id: int):
+    delete_pantry_item(session["user_id"], item_id)
+    return redirect(url_for("mobile_pantry"))
 
 
 @app.get("/dashboard")
@@ -667,6 +723,36 @@ def api_recognize():
             "items": _format_recognize_items(ingredients),
         }
     )
+
+
+@app.post("/api/mobile/pantry/save")
+@mobile_login_required
+def api_mobile_pantry_save():
+    payload = request.get_json(silent=True) or {}
+    items = payload.get("items", [])
+    if not isinstance(items, list):
+        return jsonify({"ok": False, "error": "invalid_payload"}), 400
+
+    user_id = session["user_id"]
+    saved = 0
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name_ja") or item.get("name") or "").strip()
+        if not name:
+            continue
+        upsert_pantry_item(
+            user_id,
+            name,
+            1,
+            "個",
+            date.today().isoformat(),
+        )
+        saved += 1
+
+    if saved > 0:
+        add_recognition_log(user_id, datetime.now().isoformat(), saved)
+    return jsonify({"ok": True, "saved": saved})
 
 
 @app.post("/api/vision/ingredients")

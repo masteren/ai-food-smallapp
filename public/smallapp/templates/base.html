@@ -6,7 +6,7 @@
   <title>{{ title or "AI食材認識・栄養最適化サポート" }}</title>
   <link rel="icon" type="image/png"
       href="{{ url_for('static', filename='logo_new.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=asset_v) }}">
   {% block head %}{% endblock %}
 </head>
 <body class="page{% if active == 'vision' %} page-vision{% endif %}">

@@ -26,14 +26,21 @@
         <div class="form">
           <label>画像ファイル</label>
           <div class="demo-filename" id="fileNameText">選択なし</div>
-          <input type="file" id="imageInput" accept="image/*" />
+          <div class="file-picker">
+            <input type="file" id="imageInput" accept="image/*" class="file-input-native" />
+            <button class="btn btn-upload" type="button" id="filePickButton">画像を選択</button>
+            <span class="helper" id="filePickHint">未選択</span>
+          </div>
           <div id="previewWrap" class="demo-preview u-mt8" style="display:none;">
             <img id="previewImage" alt="選択画像プレビュー" />
           </div>
+          <button class="btn small u-mt8" id="previewZoomButton" type="button" style="display:none;">画像を拡大</button>
+          <div class="helper u-mt8 preview-zoom-text" id="previewZoomText" style="display:none;">画像をクリックすると拡大表示できます。</div>
           <div class="smallrow">
             <button class="btn primary" type="button" onclick="runVision()">解析開始</button>
             <button class="btn btn-ghost" type="button" onclick="clearResult()">クリア</button>
-            <button class="btn btn-accent" type="button" onclick="openSamplePanel()">サンプル画像から選ぶ</button>
+            <button class="btn btn-accent" type="button" id="sampleSelectButton" onclick="openSamplePanel()">サンプル画像から選ぶ</button>
+            <span class="sample-picked-badge is-hidden" id="samplePickedBadge">サンプル選択済み</span>
           </div>
         </div>
         <div class="helper u-mt12" id="statusRow">
@@ -133,6 +140,19 @@
       </div>
     </div>
   </div>
+
+  <div id="previewZoomModal" class="demo-confirm" aria-hidden="true">
+    <div class="demo-confirm-backdrop" onclick="closePreviewZoom()"></div>
+    <div class="demo-confirm-body preview-zoom-body">
+      <div class="demo-confirm-head">
+        <strong>画像プレビュー（拡大）</strong>
+        <button class="iconbtn" type="button" onclick="closePreviewZoom()">✕</button>
+      </div>
+      <div class="demo-confirm-preview preview-zoom-preview">
+        <img id="previewZoomImage" alt="拡大プレビュー" />
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block scripts %}
@@ -143,22 +163,81 @@
   const previewImage = document.getElementById('previewImage');
   const imageInput = document.getElementById('imageInput');
   const fileNameText = document.getElementById('fileNameText');
+  const filePickButton = document.getElementById('filePickButton');
+  const filePickHint = document.getElementById('filePickHint');
+  const sampleSelectButton = document.getElementById('sampleSelectButton');
+  const samplePickedBadge = document.getElementById('samplePickedBadge');
   const confirmModal = document.getElementById('confirmModal');
   const confirmImage = document.getElementById('confirmImage');
+  const previewZoomModal = document.getElementById('previewZoomModal');
+  const previewZoomImage = document.getElementById('previewZoomImage');
+  const previewZoomButton = document.getElementById('previewZoomButton');
+  const previewZoomText = document.getElementById('previewZoomText');
   let selectedFile = null;
+  let selectedFromSample = false;
+  let previewObjectUrl = null;
+  let zoomObjectUrl = null;
 
   function setPreview(file){
+    if(previewObjectUrl){
+      URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = null;
+    }
     if(!file){
       previewWrap.style.display = 'none';
       previewImage.removeAttribute('src');
+      if(previewZoomButton){
+        previewZoomButton.style.display = 'none';
+      }
+      if(previewZoomText){
+        previewZoomText.style.display = 'none';
+      }
       fileNameText.textContent = '選択なし';
       return;
     }
-    const url = URL.createObjectURL(file);
-    previewImage.onload = () => URL.revokeObjectURL(url);
-    previewImage.src = url;
+    previewObjectUrl = URL.createObjectURL(file);
+    previewImage.src = previewObjectUrl;
     previewWrap.style.display = 'block';
+    if(previewZoomButton){
+      previewZoomButton.style.display = 'inline-flex';
+    }
+    if(previewZoomText){
+      previewZoomText.style.display = 'block';
+    }
     fileNameText.textContent = file.name || '選択済み';
+    if(filePickHint){
+      filePickHint.textContent = selectedFromSample ? 'サンプル画像' : '選択済み';
+    }
+  }
+
+  function setSampleSelectedState(enabled, label){
+    selectedFromSample = enabled === true;
+    if(!sampleSelectButton || !samplePickedBadge){
+      return;
+    }
+    sampleSelectButton.classList.toggle('is-selected', selectedFromSample);
+    sampleSelectButton.textContent = selectedFromSample ? 'サンプル画像を変更' : 'サンプル画像から選ぶ';
+    samplePickedBadge.classList.toggle('is-hidden', !selectedFromSample);
+    samplePickedBadge.textContent = selectedFromSample ? (label || 'サンプル選択済み') : 'サンプル選択済み';
+  }
+
+  function syncNativeFileInput(file){
+    if(!imageInput){
+      return;
+    }
+    if(!file){
+      imageInput.value = '';
+      return;
+    }
+    try{
+      if(typeof DataTransfer === 'function'){
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        imageInput.files = dt.files;
+      }
+    }catch(e){
+      // Some browsers block programmatic file assignment.
+    }
   }
 
   function setCacheBadge(status){
@@ -240,6 +319,39 @@
     delete confirmImage.dataset.url;
   }
 
+  function openPreviewZoom(){
+    if(!previewImage || !previewImage.src || !previewZoomModal || !previewZoomImage){
+      return;
+    }
+    if(zoomObjectUrl){
+      URL.revokeObjectURL(zoomObjectUrl);
+      zoomObjectUrl = null;
+    }
+    if(selectedFile){
+      zoomObjectUrl = URL.createObjectURL(selectedFile);
+      previewZoomImage.src = zoomObjectUrl;
+    }else{
+      previewZoomImage.src = previewImage.src;
+    }
+    previewZoomModal.classList.add('open');
+    previewZoomModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePreviewZoom(){
+    if(!previewZoomModal || !previewZoomImage){
+      return;
+    }
+    previewZoomModal.classList.remove('open');
+    previewZoomModal.setAttribute('aria-hidden', 'true');
+    previewZoomImage.removeAttribute('src');
+    if(zoomObjectUrl){
+      URL.revokeObjectURL(zoomObjectUrl);
+      zoomObjectUrl = null;
+    }
+    document.body.style.overflow = '';
+  }
+
   async function confirmSample(){
     const imageUrl = confirmImage.dataset.url;
     if(!imageUrl){
@@ -260,6 +372,8 @@
       const baseName = decodedName && !decodedName.includes('%') ? decodedName : `demo_${category}_${padded}.jpg`;
       const file = new File([blob], baseName, {type: blob.type || 'image/jpeg'});
       selectedFile = file;
+      syncNativeFileInput(file);
+      setSampleSelectedState(true, `選択済み: ${category}-${padded}`);
       setPreview(file);
       closeConfirm();
       closeSamplePanel();
@@ -276,12 +390,13 @@
       return;
     }
     tbody.innerHTML = items.map(item => {
+      const displayName = item.name_ja || item.name || '';
       const qty = item.quantity !== undefined ? item.quantity : '-';
       const conf = item.confidence !== undefined ? item.confidence : '-';
       const unit = item.unit !== undefined ? item.unit : '個';
       return `
         <tr>
-          <td><input value="${item.name}" data-field="name" /></td>
+          <td><input value="${displayName}" data-field="name" /></td>
           <td><input value="${qty}" data-field="quantity" style="width:84px" /></td>
           <td><input value="${unit}" data-field="unit" style="width:84px" /></td>
           <td>${conf}</td>
@@ -291,9 +406,13 @@
   }
 
   function clearResult(){
-    imageInput.value = '';
+    syncNativeFileInput(null);
     selectedFile = null;
+    setSampleSelectedState(false);
     setPreview(null);
+    if(filePickHint){
+      filePickHint.textContent = '未選択';
+    }
     statusText.textContent = '待機中';
     setCacheBadge(null);
     renderRows([]);
@@ -408,7 +527,31 @@
   imageInput.addEventListener('change', () => {
     const file = imageInput.files && imageInput.files[0];
     selectedFile = file || null;
+    setSampleSelectedState(false);
     setPreview(selectedFile);
+    if(filePickHint){
+      filePickHint.textContent = selectedFile ? '選択済み' : '未選択';
+    }
+  });
+
+  if(filePickButton){
+    filePickButton.addEventListener('click', () => imageInput.click());
+  }
+
+  if(previewWrap){
+    previewWrap.addEventListener('click', (event) => {
+      openPreviewZoom();
+    });
+  }
+
+  if(previewZoomButton){
+    previewZoomButton.addEventListener('click', openPreviewZoom);
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if(event.key === 'Escape'){
+      closePreviewZoom();
+    }
   });
 </script>
 {% endblock %}

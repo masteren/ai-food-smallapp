@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opening Animation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main id="main" aria-hidden="true">
+    <h1 class="scene-title">AI食材認識・栄養最適化支援システム</h1>
+    <nav class="side-nav" aria-label="后续页面">
+      <a class="nav-btn" href="page-1.html">页面 1</a>
+      <a class="nav-btn" href="page-2.html">页面 2</a>
+      <a class="nav-btn" href="page-3.html">页面 3</a>
+      <a class="nav-btn" href="page-4.html">页面 4</a>
+    </nav>
+    <img src="logo_bakground.png" alt="主页面标题" class="main-logo" />
+  </main>
+
+  <section id="intro" aria-live="polite">
+    <div class="intro-center">
+      <img src="logo.png" alt="开场标题" class="intro-logo" />
+    </div>
+
+    <div class="loading-left" aria-label="加载进度">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">0%</div>
+    </div>
+  </section>
+
+  <div id="wipe" aria-hidden="true"></div>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

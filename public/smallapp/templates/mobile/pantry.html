@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Pantry | AI Pantry OS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
+</head>
+<body class="page mobile-page">
+  <main class="mobile-shell">
+    <header class="mobile-topbar">
+      <div class="brand">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>在庫管理</h1>
+          <small>Mobile Pantry</small>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <a class="btn small" href="{{ url_for('mobile_scan') }}">スキャン</a>
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
+    </header>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>手動で在庫を追加</h3>
+        <small>追加</small>
+      </div>
+      <div class="card-b">
+        <form class="form" method="post" action="{{ url_for('mobile_pantry_add') }}" autocomplete="off">
+          <label>食材名</label>
+          <input name="name" placeholder="例: 卵" required />
+          <label>数量</label>
+          <input name="quantity" type="number" min="1" value="1" required />
+          <label>単位</label>
+          <select name="unit">
+            {% for u in ['個','本','枚','袋','箱','g','kg','ml','L','缶'] %}
+              <option value="{{ u }}">{{ u }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn primary block" type="submit">在庫追加</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>現在の在庫</h3>
+        <small>{{ items|length }} 件</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for item in items %}
+            <li class="mobile-result">
+              <div>
+                <div>{{ item.name }}</div>
+                <small>{{ item.quantity }} {{ item.unit }}</small>
+              </div>
+              <form method="post" action="{{ url_for('mobile_pantry_delete', item_id=item.id) }}">
+                <button class="btn small danger" type="submit">削除</button>
+              </form>
+            </li>
+          {% else %}
+            <li class="mobile-result muted">まだ在庫がありません。</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

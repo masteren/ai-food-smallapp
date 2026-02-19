@@ -33,12 +33,26 @@
           <label>ユーザー名</label>
           <input name="login_username" placeholder="ユーザー名" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');" required />
           <label>パスワード</label>
-          <input name="login_password" type="password" placeholder="••••••••" autocomplete="current-password" readonly onfocus="this.removeAttribute('readonly');" required />
+          <input id="mobile_login_password" name="login_password" type="password" placeholder="••••••••" autocomplete="current-password" readonly onfocus="this.removeAttribute('readonly');" required />
+          <label style="display:flex; gap:8px; align-items:center;">
+            <input id="toggle_mobile_login_password" type="checkbox" style="width:auto;">
+            <span class="helper">パスワードを表示</span>
+          </label>
           <button class="btn primary block" type="submit">ログイン</button>
         </form>
         <p class="helper u-mt12">デモログイン: <kbd>demo</kbd> / <kbd>PantryDemo!2026</kbd></p>
       </div>
     </section>
   </main>
+  <script>
+    (function () {
+      const toggle = document.getElementById("toggle_mobile_login_password");
+      const input = document.getElementById("mobile_login_password");
+      if (!toggle || !input) return;
+      toggle.addEventListener("change", function () {
+        input.type = this.checked ? "text" : "password";
+      });
+    })();
+  </script>
 </body>
 </html>

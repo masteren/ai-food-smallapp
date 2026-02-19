@@ -51,6 +51,97 @@ body::after{
   pointer-events:none;
 }
 
+/* Page themes */
+body.page-dashboard::after{
+  background:
+    radial-gradient(900px 420px at 8% 8%, rgba(59, 165, 255, .16), transparent 56%),
+    radial-gradient(700px 360px at 92% 18%, rgba(255, 88, 132, .13), transparent 58%),
+    linear-gradient(180deg, rgba(8, 12, 24, .72), rgba(8, 12, 24, .84));
+}
+body.page-dashboard .topbar{
+  background: linear-gradient(180deg, rgba(12, 24, 48, .78), rgba(12, 24, 48, .52));
+}
+body.page-dashboard .nav a.active{
+  background: linear-gradient(90deg, rgba(77,163,255,.20), rgba(255,88,132,.16));
+  border-color: rgba(77,163,255,.44);
+  box-shadow: inset 3px 0 0 rgba(77,163,255,.95), 0 8px 18px rgba(77,163,255,.15);
+}
+body.page-dashboard .pill.is-active,
+body.page-dashboard .btn.primary,
+body.page-dashboard .btn.btn-accent{
+  border-color: rgba(77,163,255,.30);
+  background: linear-gradient(90deg, rgba(77,163,255,.18), rgba(255,88,132,.12));
+}
+body.page-dashboard .hero{
+  border:1px solid rgba(77,163,255,.26);
+  background:
+    radial-gradient(900px 380px at 22% 0%, rgba(77,163,255,.24), transparent 55%),
+    radial-gradient(700px 380px at 80% 30%, rgba(255,88,132,.18), transparent 55%),
+    rgba(255,255,255,.05);
+}
+body.page-dashboard .kpi-card .bar > i{
+  background: linear-gradient(90deg, rgba(77,163,255,.9), rgba(255,88,132,.84));
+  box-shadow: 0 0 18px rgba(77,163,255,.26);
+}
+
+body.page-nutrition::after{
+  background:
+    radial-gradient(900px 420px at 10% 6%, rgba(78, 214, 156, .16), transparent 58%),
+    radial-gradient(760px 360px at 88% 12%, rgba(255, 191, 94, .12), transparent 56%),
+    linear-gradient(180deg, rgba(8, 15, 20, .74), rgba(8, 15, 20, .86));
+}
+body.page-nutrition .topbar{
+  background: linear-gradient(180deg, rgba(16, 34, 34, .78), rgba(16, 34, 34, .50));
+}
+body.page-nutrition .nav a.active{
+  background: linear-gradient(90deg, rgba(78,214,156,.22), rgba(255,191,94,.16));
+  border-color: rgba(78,214,156,.42);
+  box-shadow: inset 3px 0 0 rgba(78,214,156,.92), 0 8px 18px rgba(78,214,156,.16);
+}
+body.page-nutrition .pill.is-active,
+body.page-nutrition .btn.primary,
+body.page-nutrition .btn.btn-accent{
+  border-color: rgba(78,214,156,.34);
+  background: linear-gradient(90deg, rgba(78,214,156,.16), rgba(255,191,94,.16));
+}
+body.page-nutrition .kpi-card .bar > i,
+body.page-nutrition .progress > i{
+  background: linear-gradient(90deg, rgba(78,214,156,.9), rgba(255,191,94,.86));
+  box-shadow: 0 0 18px rgba(78,214,156,.25);
+}
+body.page-nutrition .card{
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+}
+
+body.page-recipes::after{
+  background:
+    radial-gradient(900px 430px at 10% 8%, rgba(255, 141, 92, .14), transparent 56%),
+    radial-gradient(740px 360px at 90% 14%, rgba(70, 205, 191, .14), transparent 58%),
+    linear-gradient(180deg, rgba(16, 12, 10, .74), rgba(16, 12, 10, .86));
+}
+body.page-recipes .topbar{
+  background: linear-gradient(180deg, rgba(42, 24, 20, .75), rgba(40, 24, 20, .48));
+}
+body.page-recipes .nav a.active{
+  background: linear-gradient(90deg, rgba(255,141,92,.20), rgba(70,205,191,.16));
+  border-color: rgba(255,141,92,.40);
+  box-shadow: inset 3px 0 0 rgba(255,141,92,.92), 0 8px 18px rgba(255,141,92,.15);
+}
+body.page-recipes .pill.is-active,
+body.page-recipes .btn.primary,
+body.page-recipes .btn.btn-accent{
+  border-color: rgba(255,141,92,.32);
+  background: linear-gradient(90deg, rgba(255,141,92,.16), rgba(70,205,191,.14));
+}
+body.page-recipes .kpi-card .bar > i,
+body.page-recipes .progress > i{
+  background: linear-gradient(90deg, rgba(255,141,92,.92), rgba(70,205,191,.86));
+  box-shadow: 0 0 18px rgba(255,141,92,.24);
+}
+body.page-recipes .card:hover{
+  border-color: rgba(255,141,92,.36);
+}
+
 a{color:inherit; text-decoration:none}
 img{max-width:100%; display:block}
 input,button,select,textarea{font:inherit; color:inherit}
@@ -519,6 +610,38 @@ kbd{
 }
 .helper{font-size:12px; color: var(--muted2); line-height:1.5}
 .smallrow{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.checkline{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.checkline input{margin:0}
+.auth-options{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:-2px;
+}
+.auth-link{
+  font-size:12px;
+  color: rgba(168,197,255,.95);
+  text-decoration:none;
+  padding:4px 0;
+  border-bottom:1px dashed transparent;
+  transition: color .18s ease, border-color .18s ease;
+}
+.auth-link:hover{
+  color:#d7e7ff;
+  border-bottom-color: rgba(215,231,255,.35);
+}
+@media (max-width: 560px){
+  .auth-options{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:6px;
+  }
+}
 
 /* File upload */
 .drop{

@@ -45,12 +45,16 @@
           <label>ユーザー名</label>
           <input name="login_username" placeholder="ユーザー名" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');" required />
           <label>パスワード</label>
-          <input name="login_password" type="password" placeholder="••••••••" autocomplete="current-password" readonly onfocus="this.removeAttribute('readonly');" required />
-          <div class="smallrow">
-            <label style="display:flex; gap:10px; align-items:center;">
+          <input id="login_password" name="login_password" type="password" placeholder="••••••••" autocomplete="current-password" readonly onfocus="this.removeAttribute('readonly');" required />
+          <label class="checkline">
+            <input id="toggle_login_password" type="checkbox" style="width:auto;">
+            <span class="helper">パスワードを表示</span>
+          </label>
+          <div class="auth-options">
+            <label class="checkline">
               <input type="checkbox" style="width:auto;"> <span class="helper">ログイン状態を保持</span>
             </label>
-            <span class="helper">パスワードを忘れた</span>
+            <a class="auth-link" href="{{ url_for('forgot_password') }}">パスワードを忘れた</a>
           </div>
           <button class="btn primary block" type="submit">ログイン</button>
         </form>
@@ -63,7 +67,11 @@
           <label>ユーザー名</label>
           <input name="username" placeholder="new-user" autocomplete="username" required />
           <label>パスワード</label>
-          <input name="password" type="password" placeholder="10文字以上（英大/英小/数字/記号）" autocomplete="new-password" required />
+          <input id="register_password" name="password" type="password" placeholder="10文字以上（英大/英小/数字/記号）" autocomplete="new-password" required />
+          <label class="checkline">
+            <input id="toggle_register_password" type="checkbox" style="width:auto;">
+            <span class="helper">パスワードを表示</span>
+          </label>
           <button class="btn block" type="submit">登録する</button>
           <div class="hr"></div>
           <a class="btn block" href="{{ url_for('home') }}">ゲストとして入る</a>
@@ -71,4 +79,18 @@
       </div>
     </div>
   </div>
+  <script>
+    (function () {
+      const bindToggle = (toggleId, inputId) => {
+        const toggle = document.getElementById(toggleId);
+        const input = document.getElementById(inputId);
+        if (!toggle || !input) return;
+        toggle.addEventListener("change", function () {
+          input.type = this.checked ? "text" : "password";
+        });
+      };
+      bindToggle("toggle_login_password", "login_password");
+      bindToggle("toggle_register_password", "register_password");
+    })();
+  </script>
 {% endblock %}

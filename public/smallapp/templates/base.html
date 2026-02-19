@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=asset_v) }}">
   {% block head %}{% endblock %}
 </head>
-<body class="page{% if active == 'vision' %} page-vision{% endif %}">
+<body class="page{% if active == 'vision' %} page-vision{% endif %}{% if active == 'dashboard' %} page-dashboard{% endif %}{% if active == 'nutrition' %} page-nutrition{% endif %}{% if active == 'recipes' %} page-recipes{% endif %}">
   <div class="app">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -70,7 +70,7 @@
         <div class="side-title">ステータス</div>
         <div class="side-card">
           <div class="kpi">
-            <strong>{{ stats_ingredients or 18 }}</strong>
+            <strong>{{ stats_ingredients or 0 }}</strong>
             <span>在庫数</span>
           </div>
           <p>AI認識→自動追加→レシピ提案→栄養評価までを一気通貫。</p>

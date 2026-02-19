@@ -104,13 +104,16 @@
   const labels = {{ labels | tojson }};
   const kcalSeries = {{ kcal_series | tojson }};
   const proteinSeries = {{ protein_series | tojson }};
+  const isNutritionTheme = document.body.classList.contains('page-nutrition');
+  const kcalColor = isNutritionTheme ? 'rgba(255,191,94,.92)' : 'rgba(53,246,255,.8)';
+  const proteinColor = isNutritionTheme ? 'rgba(78,214,156,.95)' : 'rgba(48,255,168,.8)';
   new Chart(ctx, {
     type: 'line',
     data: {
       labels: labels,
       datasets: [
-        { label:'kcal', data:kcalSeries, tension:.35, borderColor:'rgba(53,246,255,.8)' },
-        { label:'protein', data:proteinSeries, tension:.35, borderColor:'rgba(48,255,168,.8)' }
+        { label:'kcal', data:kcalSeries, tension:.35, borderColor:kcalColor },
+        { label:'protein', data:proteinSeries, tension:.35, borderColor:proteinColor }
       ]
     },
     options: {

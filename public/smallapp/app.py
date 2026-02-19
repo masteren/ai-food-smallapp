@@ -293,9 +293,11 @@ def inject_alert_count():
     """Inject alert count into all templates."""
     user_id = session.get("user_id")
     alert_count = 0
+    stats_ingredients = 0
     if user_id:
         expiry_alerts = fetch_expiry_alerts(user_id)
         alert_count = len(expiry_alerts)
+        stats_ingredients = len(fetch_pantry_items(user_id))
     style_path = Path(app.root_path) / "static" / "style.css"
     mobile_style_path = Path(app.root_path) / "static" / "mobile.css"
     mobile_scan_path = Path(app.root_path) / "static" / "mobile_scan.js"
@@ -313,6 +315,7 @@ def inject_alert_count():
         mobile_asset_v = "1"
     return dict(
         alert_count=alert_count,
+        stats_ingredients=stats_ingredients,
         ingredient_note=_ingredient_note,
         asset_v=asset_v,
         mobile_asset_v=mobile_asset_v,
@@ -376,6 +379,11 @@ def home():
 @app.get("/auth")
 def auth():
     return render_template("auth.html", error=None)
+
+
+@app.get("/forgot-password")
+def forgot_password():
+    return render_template("forgot_password.html")
 
 
 @app.post("/register")
@@ -445,6 +453,43 @@ def mobile_login_post():
 
     session["user_id"] = user["id"]
     return redirect(url_for("mobile_home"))
+
+
+@app.post("/api/mobile/login")
+def api_mobile_login():
+    payload = request.get_json(silent=True) or {}
+
+    username = str(payload.get("username", "")).strip()
+    password = str(payload.get("password", "")).strip()
+
+    if not username:
+        username = request.form.get("login_username", request.form.get("username", "")).strip()
+    if not password:
+        password = request.form.get("login_password", request.form.get("password", "")).strip()
+
+    if not username or not password:
+        return jsonify({"ok": False, "error": "missing_credentials"}), 400
+
+    user = get_user_by_username(username)
+    if not user or not check_password_hash(user["password_hash"], password):
+        return jsonify({"ok": False, "error": "invalid_credentials"}), 401
+
+    session["user_id"] = user["id"]
+    return jsonify(
+        {
+            "ok": True,
+            "user": {
+                "id": user["id"],
+                "username": user["username"],
+            },
+        }
+    )
+
+
+@app.post("/api/mobile/logout")
+def api_mobile_logout():
+    session.clear()
+    return jsonify({"ok": True})
 
 
 @app.post("/m/logout")
@@ -753,6 +798,16 @@ def api_mobile_pantry_save():
     if saved > 0:
         add_recognition_log(user_id, datetime.now().isoformat(), saved)
     return jsonify({"ok": True, "saved": saved})
+
+
+@app.get("/api/mobile/pantry")
+def api_mobile_pantry():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    items = fetch_pantry_items(user_id)
+    return jsonify({"ok": True, "items": items})
 
 
 @app.post("/api/vision/ingredients")
@@ -1130,6 +1185,22 @@ def _nutrition_score(today_totals: Dict[str, float]) -> Dict[str, str]:
     return {"score": score, "grade": grade, "reasons": reasons[:3]}
 
 
+def _nutrition_demo_totals(labels: List[str]) -> Tuple[Dict[str, Dict[str, float]], Dict[str, float]]:
+    kcal_demo = [1680, 1820, 1760, 1910, 1740, 2050, 1860]
+    protein_demo = [58, 64, 62, 71, 59, 76, 68]
+
+    daily_totals = {
+        label: {"kcal": kcal_demo[idx], "protein": protein_demo[idx]}
+        for idx, label in enumerate(labels)
+    }
+    today_totals = {
+        "kcal": kcal_demo[-1],
+        "protein": protein_demo[-1],
+        "veg_score": 3,
+    }
+    return daily_totals, today_totals
+
+
 @app.get("/nutrition")
 @login_required
 def nutrition():
@@ -1144,20 +1215,24 @@ def nutrition():
     logs = fetch_cooking_logs_range(
         session["user_id"], labels[0], labels[-1]
     )
+    use_demo = request.args.get("demo") == "1"
 
-    for log in logs:
-        recipe = recipes_map.get(log["recipe_id"])
-        if not recipe:
-            continue
-        nutrition = json.loads(recipe["nutrition_json"])
-        day_key = log["cooked_at_date"]
-        if day_key in daily_totals:
-            daily_totals[day_key]["kcal"] += nutrition.get("kcal", 0)
-            daily_totals[day_key]["protein"] += nutrition.get("protein", 0)
-        if day_key == today.isoformat():
-            today_totals["kcal"] += nutrition.get("kcal", 0)
-            today_totals["protein"] += nutrition.get("protein", 0)
-            today_totals["veg_score"] += nutrition.get("veg_score", 0)
+    if use_demo or not logs:
+        daily_totals, today_totals = _nutrition_demo_totals(labels)
+    else:
+        for log in logs:
+            recipe = recipes_map.get(log["recipe_id"])
+            if not recipe:
+                continue
+            nutrition = json.loads(recipe["nutrition_json"])
+            day_key = log["cooked_at_date"]
+            if day_key in daily_totals:
+                daily_totals[day_key]["kcal"] += nutrition.get("kcal", 0)
+                daily_totals[day_key]["protein"] += nutrition.get("protein", 0)
+            if day_key == today.isoformat():
+                today_totals["kcal"] += nutrition.get("kcal", 0)
+                today_totals["protein"] += nutrition.get("protein", 0)
+                today_totals["veg_score"] += nutrition.get("veg_score", 0)
 
     score_data = _nutrition_score(today_totals)
     kcal_series = [daily_totals[label]["kcal"] for label in labels]
@@ -1169,7 +1244,11 @@ def nutrition():
     if today_totals["veg_score"] < 2:
         alerts.append("野菜摂取が不足しています")
     if not alerts:
-        alerts.append("栄養バランスは良好です")
+        alerts = [
+            "栄養バランスは良好です",
+            "水分を1.5L以上を目安に維持しましょう",
+            "夕食の野菜量をもう1皿増やすとさらに安定します",
+        ]
 
     pantry_items = fetch_pantry_items(session["user_id"])
     pantry_names = {item["name"] for item in pantry_items}

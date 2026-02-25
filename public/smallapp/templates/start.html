@@ -274,7 +274,7 @@
       const reveal = document.querySelector(".scan-reveal");
       const progressFill = document.querySelector(".progress-fill");
       const progressPercent = document.getElementById("progressPercent");
-      const homeUrl = "{{ url_for('home') }}";
+      const homeUrl = {{ (next_url or url_for('home'))|tojson }};
       let ready = false;
       let entering = false;
       let readyTimer = null;

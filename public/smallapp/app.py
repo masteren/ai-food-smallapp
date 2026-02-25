@@ -228,6 +228,28 @@ def _enrich_ingredients_with_notes(ingredients: List[Dict[str, object]]) -> List
     return enriched
 
 
+def _is_mobile_client() -> bool:
+    # Prefer Client Hints when available, fallback to User-Agent keyword matching.
+    ch_mobile = (request.headers.get("Sec-CH-UA-Mobile") or "").strip()
+    if ch_mobile == "?1":
+        return True
+    if ch_mobile == "?0":
+        return False
+
+    ua = (request.headers.get("User-Agent") or "").lower()
+    mobile_keywords = (
+        "iphone",
+        "android",
+        "mobile",
+        "ipad",
+        "ipod",
+        "windows phone",
+        "blackberry",
+        "opera mini",
+    )
+    return any(keyword in ua for keyword in mobile_keywords)
+
+
 def _read_demo_cache(path: Path) -> Optional[List[Dict[str, object]]]:
     if not path.exists():
         return None
@@ -324,6 +346,8 @@ def inject_alert_count():
 
 @app.get("/")
 def start():
+    if _is_mobile_client():
+        return redirect(url_for("mobile_root"))
     return render_template("start.html")
 
 
@@ -430,9 +454,8 @@ def logout():
 
 @app.get("/m")
 def mobile_root():
-    if "user_id" in session:
-        return redirect(url_for("mobile_home"))
-    return redirect(url_for("mobile_login"))
+    next_url = url_for("mobile_home") if "user_id" in session else url_for("mobile_login")
+    return render_template("start.html", next_url=next_url)
 
 
 @app.get("/m/login")

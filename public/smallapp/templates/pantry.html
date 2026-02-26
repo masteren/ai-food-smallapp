@@ -8,7 +8,7 @@
   <div class="pagehead">
     <div>
       <h2>所持食材リスト</h2>
-      <p>食材の追加・削除・期限管理。AI認識結果をここに集約。</p>
+      <p>食材の追加・削除・登録日管理。AI認識結果をここに集約。</p>
     </div>
     <div class="smallrow">
       <a class="btn" href="{{ url_for('vision') }}">AI認識に戻る</a>
@@ -52,7 +52,7 @@
             <th>食材</th>
             <th>数量</th>
             <th>単位</th>
-            <th>期限</th>
+            <th>登録日</th>
             <th class="right">操作</th>
           </tr>
         </thead>
@@ -151,7 +151,7 @@
           <option>L</option>
           <option>缶</option>
         </select>
-        <label>期限</label>
+        <label>登録日</label>
         <input type="date" name="expiry_date" />
         <div class="smallrow">
           <button class="btn primary" type="submit">追加</button>

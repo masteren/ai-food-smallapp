@@ -99,24 +99,20 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>鶏むね肉の塩レモン</td>
-              <td class="muted">15分</td>
-              <td class="muted">★☆☆</td>
-              <td class="right"><a class="btn small" href="{{ url_for('recipe_detail', recipe_id=1) }}">詳細</a></td>
-            </tr>
-            <tr>
-              <td>卵と野菜のスープ</td>
-              <td class="muted">10分</td>
-              <td class="muted">★☆☆</td>
-              <td class="right"><a class="btn small" href="{{ url_for('recipe_detail', recipe_id=2) }}">詳細</a></td>
-            </tr>
-            <tr>
-              <td>ツナ豆腐ボウル</td>
-              <td class="muted">7分</td>
-              <td class="muted">★☆☆</td>
-              <td class="right"><a class="btn small" href="{{ url_for('recipe_detail', recipe_id=3) }}">詳細</a></td>
-            </tr>
+            {% if home_recommendations %}
+              {% for rec in home_recommendations %}
+                <tr>
+                  <td>{{ rec.title }}</td>
+                  <td class="muted">{{ rec.minutes }}</td>
+                  <td class="muted">{{ rec.difficulty }}</td>
+                  <td class="right"><a class="btn small" href="{{ url_for('recipe_detail', recipe_id=rec.id) }}">詳細</a></td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="4" class="muted">おすすめレシピがまだありません</td>
+              </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>

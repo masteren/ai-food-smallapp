@@ -479,6 +479,7 @@ def start():
 
 
 @app.get("/home")
+@login_required
 def home():
     # Get overview stats for home page
     user_id = session.get("user_id")
@@ -487,6 +488,7 @@ def home():
     expiry_alert_count = 0
     recipe_count = 0
     avg_protein = 0
+    home_recommendations = []
 
     if user_id:
         # Get stats only if user is logged in
@@ -497,10 +499,43 @@ def home():
         expiry_alert_count = len(expiry_alerts)
 
         recipes_data = fetch_recipes()
+        recipes_by_title = {str(recipe.get("title", "")): recipe for recipe in recipes_data}
         pantry_names = {item["name"] for item in pantry_items}
         recipe_count = sum(1 for recipe in recipes_data
                           if any(ing["name"] in pantry_names
                                 for ing in json.loads(recipe["ingredients_json"])))
+
+        # Keep homepage labels stable when available, but gracefully fallback
+        # to existing recipes in the current dataset so the section never goes empty.
+        preferred_items = [
+            {"title": "鶏むね肉の塩レモン", "minutes": "15分", "difficulty": "★☆☆"},
+            {"title": "卵と野菜のスープ", "minutes": "10分", "difficulty": "★☆☆"},
+            {"title": "ツナ豆腐ボウル", "minutes": "7分", "difficulty": "★☆☆"},
+        ]
+        for item in preferred_items:
+            recipe = recipes_by_title.get(item["title"])
+            if not recipe:
+                continue
+            home_recommendations.append(
+                {
+                    "id": recipe["id"],
+                    "title": item["title"],
+                    "minutes": item["minutes"],
+                    "difficulty": item["difficulty"],
+                }
+            )
+
+        if not home_recommendations:
+            fallback_minutes = ["15分", "10分", "7分"]
+            for idx, recipe in enumerate(recipes_data[:3]):
+                home_recommendations.append(
+                    {
+                        "id": recipe["id"],
+                        "title": str(recipe.get("title", "")),
+                        "minutes": fallback_minutes[idx] if idx < len(fallback_minutes) else "10分",
+                        "difficulty": "★☆☆",
+                    }
+                )
 
         # Calculate average protein for the week
         labels = _current_week_monday_to_sunday()
@@ -524,6 +559,7 @@ def home():
         expiry_alert_count=expiry_alert_count,
         recipe_count=recipe_count,
         avg_protein=avg_protein,
+        home_recommendations=home_recommendations,
     )
 
 
@@ -1262,39 +1298,26 @@ def recipe_edit(recipe_id: int):
         return redirect(url_for("recipes"))
 
     form_values = {
-        "title": request.form.get("title", "").strip(),
-        "description": request.form.get("description", "").strip(),
         "ingredients_text": request.form.get("ingredients_text", "").strip(),
         "steps_text": request.form.get("steps_text", "").strip(),
-        "nutrition_kcal": request.form.get("nutrition_kcal", "").strip(),
-        "nutrition_protein": request.form.get("nutrition_protein", "").strip(),
-        "nutrition_fat": request.form.get("nutrition_fat", "").strip(),
-        "nutrition_carb": request.form.get("nutrition_carb", "").strip(),
-        "nutrition_veg_score": request.form.get("nutrition_veg_score", "").strip(),
     }
 
     try:
-        title = form_values["title"]
-        if not title:
-            raise ValueError("レシピ名を入力してください。")
-
         ingredients = _parse_recipe_ingredients_text(form_values["ingredients_text"])
         steps = _parse_recipe_steps_text(form_values["steps_text"])
-        nutrition = {
-            "kcal": _parse_nutrition_number("kcal", form_values["nutrition_kcal"]),
-            "protein": _parse_nutrition_number("たんぱく質", form_values["nutrition_protein"]),
-            "fat": _parse_nutrition_number("脂質", form_values["nutrition_fat"]),
-            "carb": _parse_nutrition_number("炭水化物", form_values["nutrition_carb"]),
-            "veg_score": _parse_nutrition_number("野菜スコア", form_values["nutrition_veg_score"]),
-        }
+        title = str(recipe.get("title", "") or "")
+        description = str(recipe.get("description", "") or "")
+        nutrition_json = recipe.get("nutrition_json", "{}")
+        if not isinstance(nutrition_json, str):
+            nutrition_json = json.dumps(nutrition_json, ensure_ascii=False)
 
         update_recipe(
             recipe_id,
             title,
-            form_values["description"],
+            description,
             json.dumps(steps, ensure_ascii=False),
             json.dumps(ingredients, ensure_ascii=False),
-            json.dumps(nutrition, ensure_ascii=False),
+            nutrition_json,
         )
     except ValueError as exc:
         context = _build_recipe_detail_context(

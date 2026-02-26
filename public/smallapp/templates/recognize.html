@@ -36,7 +36,7 @@
                 <input type="file" name="image" accept="image/*" required />
                 <div class="smallrow">
                   <button class="btn primary" type="submit">解析開始</button>
-                  <button class="btn" type="button" onclick="demoFill()">デモ表示</button>
+                  <button class="btn" type="button" onclick="demoFill()">体験用サンプル表示</button>
                 </div>
               </form>
             </div>
@@ -152,7 +152,7 @@
         <td>${r.name}</td>
         <td>${r.qty}</td>
         <td>${r.unit}</td>
-        <td class="right"><span class="muted">デモ</span></td>
+        <td class="right"><span class="muted">体験用</span></td>
       </tr>
     `).join('');
     document.getElementById('detCount').textContent = data.length;

@@ -446,6 +446,26 @@ def fetch_recipe_by_id(recipe_id: int) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
+def update_recipe(
+    recipe_id: int,
+    title: str,
+    description: str,
+    steps_json: str,
+    ingredients_json: str,
+    nutrition_json: str,
+) -> None:
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE recipes
+            SET title = ?, description = ?, steps_json = ?, ingredients_json = ?, nutrition_json = ?
+            WHERE id = ?
+            """,
+            (title, description, steps_json, ingredients_json, nutrition_json, recipe_id),
+        )
+        conn.commit()
+
+
 def add_cooking_log(user_id: int, recipe_id: int, cooked_at_date: str) -> None:
     with get_connection() as conn:
         conn.execute(

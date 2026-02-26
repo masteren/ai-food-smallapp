@@ -13,6 +13,7 @@
     <div class="smallrow">
       <a class="btn" href="{{ url_for('recipes') }}">← レシピ一覧</a>
       {% if recipe %}
+        <a class="btn" href="{{ url_for('recipe_detail', recipe_id=recipe.id, edit=1) }}">編集</a>
         <form action="/recipes/{{ recipe.id }}/cook" method="post">
           <button class="btn primary" type="submit">作った（記録）</button>
         </form>
@@ -21,6 +22,70 @@
       {% endif %}
     </div>
   </div>
+
+  {% if edit_success %}
+    <div class="card soft u-mt12">
+      <div class="card-b">
+        <p class="helper" style="margin:0; color:#8ff0a4;">{{ edit_success }}</p>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if edit_mode and recipe %}
+    <div class="card soft u-mt12">
+      <div class="card-h">
+        <h3>レシピ編集</h3>
+        <small>保存すると一覧・詳細に反映</small>
+      </div>
+      <div class="card-b">
+        {% if edit_error %}
+          <p class="helper" style="color:#ffb3b3; margin-top:0;">{{ edit_error }}</p>
+        {% endif %}
+        <form class="form" method="post" action="{{ url_for('recipe_edit', recipe_id=recipe.id) }}">
+          <label>レシピ名</label>
+          <input name="title" value="{{ edit_form.title }}" required>
+
+          <label>説明</label>
+          <textarea name="description" rows="3" placeholder="レシピの概要">{{ edit_form.description }}</textarea>
+
+          <label>材料（1行ごとに `食材名 | 量 | 単位 | 備考`）</label>
+          <textarea name="ingredients_text" rows="8" placeholder="鶏むね肉 | 1 | 枚 | そぎ切り">{{ edit_form.ingredients_text }}</textarea>
+          <p class="helper" style="margin-top:6px;">備考は省略できます。例: `卵 | 2 | 個`</p>
+
+          <label>手順（1行ごとに1ステップ）</label>
+          <textarea name="steps_text" rows="6" placeholder="鶏肉を切る&#10;フライパンで焼く">{{ edit_form.steps_text }}</textarea>
+
+          <div class="grid cols-2">
+            <div>
+              <label>kcal</label>
+              <input name="nutrition_kcal" type="number" step="0.1" min="0" value="{{ edit_form.nutrition_kcal }}" required>
+            </div>
+            <div>
+              <label>たんぱく質 (g)</label>
+              <input name="nutrition_protein" type="number" step="0.1" min="0" value="{{ edit_form.nutrition_protein }}" required>
+            </div>
+            <div>
+              <label>脂質 (g)</label>
+              <input name="nutrition_fat" type="number" step="0.1" min="0" value="{{ edit_form.nutrition_fat }}" required>
+            </div>
+            <div>
+              <label>炭水化物 (g)</label>
+              <input name="nutrition_carb" type="number" step="0.1" min="0" value="{{ edit_form.nutrition_carb }}" required>
+            </div>
+            <div>
+              <label>野菜スコア</label>
+              <input name="nutrition_veg_score" type="number" step="0.1" min="0" value="{{ edit_form.nutrition_veg_score }}" required>
+            </div>
+          </div>
+
+          <div class="smallrow u-mt12">
+            <button class="btn primary" type="submit">保存する</button>
+            <a class="btn" href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}">編集を閉じる</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
 
   <div class="grid cols-2">
     <div class="card">

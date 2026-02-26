@@ -31,6 +31,7 @@ from db import (
     search_recipes,
     upsert_pantry_item,
     update_pantry_item,
+    update_recipe,
     delete_pantry_item,
 )
 from services.openai_vision import (
@@ -226,6 +227,132 @@ def _enrich_ingredients_with_notes(ingredients: List[Dict[str, object]]) -> List
             ingredient["note"] = _ingredient_note(name, unit, ingredient.get("quantity"))
         enriched.append(ingredient)
     return enriched
+
+
+def _recipe_edit_form_from_data(
+    recipe: Dict[str, object],
+    ingredients: List[Dict[str, object]],
+    steps: List[str],
+    nutrition: Dict[str, object],
+) -> Dict[str, str]:
+    ingredient_lines: List[str] = []
+    for ing in ingredients:
+        name = str(ing.get("name", "")).strip()
+        quantity = str(ing.get("quantity", "")).strip()
+        unit = str(ing.get("unit", "")).strip()
+        note = str(ing.get("note", "") or "").strip()
+        if not (name or quantity or unit or note):
+            continue
+        parts = [name, quantity, unit]
+        if note:
+            parts.append(note)
+        ingredient_lines.append(" | ".join(parts))
+
+    return {
+        "title": str(recipe.get("title", "") or ""),
+        "description": str(recipe.get("description", "") or ""),
+        "ingredients_text": "\n".join(ingredient_lines),
+        "steps_text": "\n".join(str(s) for s in steps if str(s).strip()),
+        "nutrition_kcal": str(nutrition.get("kcal", "") or ""),
+        "nutrition_protein": str(nutrition.get("protein", "") or ""),
+        "nutrition_fat": str(nutrition.get("fat", "") or ""),
+        "nutrition_carb": str(nutrition.get("carb", "") or ""),
+        "nutrition_veg_score": str(nutrition.get("veg_score", "") or ""),
+    }
+
+
+def _parse_recipe_ingredients_text(text: str) -> List[Dict[str, object]]:
+    ingredients: List[Dict[str, object]] = []
+    for idx, raw_line in enumerate((text or "").splitlines(), start=1):
+        line = raw_line.strip()
+        if not line:
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) < 3:
+            raise ValueError(f"材料 {idx}行目は「食材名 | 量 | 単位」の形式で入力してください。")
+        name, quantity, unit = parts[0], parts[1], parts[2]
+        note = parts[3] if len(parts) >= 4 else ""
+        if not name or not quantity or not unit:
+            raise ValueError(f"材料 {idx}行目の食材名・量・単位は必須です。")
+        item: Dict[str, object] = {
+            "name": name,
+            "quantity": quantity,
+            "unit": unit,
+        }
+        if note:
+            item["note"] = note
+        ingredients.append(item)
+    if not ingredients:
+        raise ValueError("材料を1行以上入力してください。")
+    return ingredients
+
+
+def _parse_recipe_steps_text(text: str) -> List[str]:
+    steps = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    if not steps:
+        raise ValueError("手順を1行以上入力してください。")
+    return steps
+
+
+def _parse_nutrition_number(label: str, raw_value: str) -> float:
+    value = (raw_value or "").strip()
+    if not value:
+        raise ValueError(f"{label}を入力してください。")
+    try:
+        number = float(value)
+    except ValueError as exc:
+        raise ValueError(f"{label}は数値で入力してください。") from exc
+    if number < 0:
+        raise ValueError(f"{label}は0以上で入力してください。")
+    return int(number) if number.is_integer() else number
+
+
+def _build_recipe_detail_context(
+    recipe_id: int,
+    *,
+    edit_mode: bool = False,
+    edit_error: str = "",
+    edit_success: str = "",
+    edit_form: Optional[Dict[str, str]] = None,
+) -> Optional[Dict[str, object]]:
+    recipe = fetch_recipe_by_id(recipe_id)
+    if not recipe:
+        return None
+
+    user_id = session["user_id"]
+    pantry_items = fetch_pantry_items(user_id)
+    pantry_names = {item["name"] for item in pantry_items}
+
+    raw_ingredients = json.loads(recipe["ingredients_json"])
+    ingredients = _enrich_ingredients_with_notes(raw_ingredients)
+    matched_ingredients = [ing for ing in ingredients if ing["name"] in pantry_names]
+    match_rate = int((len(matched_ingredients) / len(ingredients) * 100) if ingredients else 0)
+
+    raw_steps = json.loads(recipe["steps_json"])
+    steps = raw_steps if isinstance(raw_steps, list) else []
+    steps = [str(step) for step in steps]
+
+    nutrition_data = json.loads(recipe["nutrition_json"])
+    if not isinstance(nutrition_data, dict):
+        nutrition_data = {}
+
+    if edit_form is None:
+        edit_form = _recipe_edit_form_from_data(recipe, ingredients, steps, nutrition_data)
+
+    return {
+        "recipe": recipe,
+        "ingredients": ingredients,
+        "steps": steps,
+        "nutrition": nutrition_data,
+        "match_rate": match_rate,
+        "matched_count": len(matched_ingredients),
+        "total_ingredients": len(ingredients),
+        "user": current_user(),
+        "edit_mode": edit_mode,
+        "edit_error": edit_error,
+        "edit_success": edit_success,
+        "edit_form": edit_form,
+    }
 
 
 def _is_mobile_client() -> bool:
@@ -1117,31 +1244,70 @@ def recently_used():
 @app.get("/recipes/<int:recipe_id>")
 @login_required
 def recipe_detail(recipe_id: int):
+    context = _build_recipe_detail_context(
+        recipe_id,
+        edit_mode=request.args.get("edit") == "1",
+        edit_success="レシピを更新しました。" if request.args.get("saved") == "1" else "",
+    )
+    if not context:
+        return redirect(url_for("recipes"))
+    return render_template("recipe_detail.html", **context)
+
+
+@app.post("/recipes/<int:recipe_id>/edit")
+@login_required
+def recipe_edit(recipe_id: int):
     recipe = fetch_recipe_by_id(recipe_id)
     if not recipe:
         return redirect(url_for("recipes"))
 
-    # Calculate match rate with pantry items
-    user_id = session["user_id"]
-    pantry_items = fetch_pantry_items(user_id)
-    pantry_names = {item["name"] for item in pantry_items}
-    ingredients = _enrich_ingredients_with_notes(json.loads(recipe["ingredients_json"]))
-    matched_ingredients = [ing for ing in ingredients if ing["name"] in pantry_names]
-    match_rate = int((len(matched_ingredients) / len(ingredients) * 100) if ingredients else 0)
+    form_values = {
+        "title": request.form.get("title", "").strip(),
+        "description": request.form.get("description", "").strip(),
+        "ingredients_text": request.form.get("ingredients_text", "").strip(),
+        "steps_text": request.form.get("steps_text", "").strip(),
+        "nutrition_kcal": request.form.get("nutrition_kcal", "").strip(),
+        "nutrition_protein": request.form.get("nutrition_protein", "").strip(),
+        "nutrition_fat": request.form.get("nutrition_fat", "").strip(),
+        "nutrition_carb": request.form.get("nutrition_carb", "").strip(),
+        "nutrition_veg_score": request.form.get("nutrition_veg_score", "").strip(),
+    }
 
-    nutrition_data = json.loads(recipe["nutrition_json"])
+    try:
+        title = form_values["title"]
+        if not title:
+            raise ValueError("レシピ名を入力してください。")
 
-    return render_template(
-        "recipe_detail.html",
-        recipe=recipe,
-        ingredients=ingredients,
-        steps=json.loads(recipe["steps_json"]),
-        nutrition=nutrition_data,
-        match_rate=match_rate,
-        matched_count=len(matched_ingredients),
-        total_ingredients=len(ingredients),
-        user=current_user(),
-    )
+        ingredients = _parse_recipe_ingredients_text(form_values["ingredients_text"])
+        steps = _parse_recipe_steps_text(form_values["steps_text"])
+        nutrition = {
+            "kcal": _parse_nutrition_number("kcal", form_values["nutrition_kcal"]),
+            "protein": _parse_nutrition_number("たんぱく質", form_values["nutrition_protein"]),
+            "fat": _parse_nutrition_number("脂質", form_values["nutrition_fat"]),
+            "carb": _parse_nutrition_number("炭水化物", form_values["nutrition_carb"]),
+            "veg_score": _parse_nutrition_number("野菜スコア", form_values["nutrition_veg_score"]),
+        }
+
+        update_recipe(
+            recipe_id,
+            title,
+            form_values["description"],
+            json.dumps(steps, ensure_ascii=False),
+            json.dumps(ingredients, ensure_ascii=False),
+            json.dumps(nutrition, ensure_ascii=False),
+        )
+    except ValueError as exc:
+        context = _build_recipe_detail_context(
+            recipe_id,
+            edit_mode=True,
+            edit_error=str(exc),
+            edit_form=form_values,
+        )
+        if not context:
+            return redirect(url_for("recipes"))
+        return render_template("recipe_detail.html", **context)
+
+    return redirect(url_for("recipe_detail", recipe_id=recipe_id, saved=1, edit=1))
 
 
 @app.post("/recipes/<int:recipe_id>/cook")

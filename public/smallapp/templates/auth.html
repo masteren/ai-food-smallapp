@@ -8,7 +8,7 @@
     <div class="auth-card">
       <div class="auth-left">
         <div class="brand">
-          <div class="logo"></div>
+          <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
           <div>
             <h1>AI Pantry OS</h1>
             <small>食材認識・栄養最適化サポート</small>
@@ -73,8 +73,6 @@
             <span class="helper">パスワードを表示</span>
           </label>
           <button class="btn block" type="submit">登録する</button>
-          <div class="hr"></div>
-          <a class="btn block" href="{{ url_for('home') }}">ゲストとして入る</a>
         </form>
       </div>
     </div>

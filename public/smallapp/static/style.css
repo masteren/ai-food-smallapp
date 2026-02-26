@@ -553,6 +553,21 @@ kbd{
 .hero h2{margin:0; font-size:24px; letter-spacing:.4px}
 .hero p{margin:8px 0 0; color: var(--muted2); font-size:13px; line-height:1.5; max-width: 66ch}
 .hero .cta{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
+@media (max-width: 760px){
+  .hero .row{
+    flex-direction: column;
+    gap: 14px;
+  }
+  .hero .row > div:last-child{
+    width: 100%;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+  .hero h2{
+    font-size: 21px;
+    line-height: 1.3;
+  }
+}
 
 .u-muted{color: var(--muted2)}
 .u-right{text-align:right}

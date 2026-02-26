@@ -229,14 +229,14 @@ body.mobile-page::after{
   color:#fff;
   font-size: 1.75rem;
   line-height: 1.2;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .mobile-page .brand h1{
   color:#fff;
   font-size: 1.35rem;
   line-height: 1.15;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .mobile-page .brand small,
@@ -247,7 +247,7 @@ body.mobile-page::after{
 
 .mobile-page .brand small{
   font-size: .95rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .mobile-page .helper{
@@ -257,7 +257,7 @@ body.mobile-page::after{
 
 .mobile-page .form label{
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: .01em;
 }
 
@@ -267,7 +267,7 @@ body.mobile-page::after{
   border-color: rgba(255,255,255,.26);
   background: rgba(5,8,16,.64);
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.35;
 }
 
@@ -281,7 +281,7 @@ body.mobile-page::after{
   border-color: rgba(255,255,255,.24);
   background: rgba(255,255,255,.10);
   font-size: 1.2rem;
-  font-weight: 800;
+  font-weight: 700;
   min-height: 54px;
 }
 
@@ -304,12 +304,12 @@ body.mobile-page::after{
 .mobile-page .mobile-result small{
   color: rgba(255,255,255,.84);
   font-size: .95rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .mobile-page .mobile-result .confidence{
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .mobile-page kbd{

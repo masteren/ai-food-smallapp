@@ -1365,7 +1365,9 @@ def _nutrition_score(today_totals: Dict[str, float]) -> Dict[str, str]:
 
     score = max(0, min(100, int(score)))
 
-    if score >= 85:
+    if score >= 90:
+        grade = "S"
+    elif score >= 80:
         grade = "A"
     elif score >= 70:
         grade = "B"
@@ -1413,6 +1415,9 @@ def _nutrition_demo_totals(labels: List[str]) -> Tuple[Dict[str, Dict[str, float
     return daily_totals, today_totals
 
 
+DEFAULT_STAPLE_KCAL = 252  # Approx. one bowl of cooked rice.
+
+
 @app.get("/nutrition")
 @login_required
 def nutrition():
@@ -1432,6 +1437,7 @@ def nutrition():
     if use_demo or not logs:
         daily_totals, today_totals = _nutrition_demo_totals(labels)
     else:
+        days_with_logs = set()
         for log in logs:
             recipe = recipes_map.get(log["recipe_id"])
             if not recipe:
@@ -1439,12 +1445,19 @@ def nutrition():
             nutrition = json.loads(recipe["nutrition_json"])
             day_key = log["cooked_at_date"]
             if day_key in daily_totals:
+                days_with_logs.add(day_key)
                 daily_totals[day_key]["kcal"] += nutrition.get("kcal", 0)
                 daily_totals[day_key]["protein"] += nutrition.get("protein", 0)
             if day_key == today.isoformat():
                 today_totals["kcal"] += nutrition.get("kcal", 0)
                 today_totals["protein"] += nutrition.get("protein", 0)
                 today_totals["veg_score"] += nutrition.get("veg_score", 0)
+
+        # Add default staple kcal once per day when there is at least one meal log.
+        for day_key in days_with_logs:
+            daily_totals[day_key]["kcal"] += DEFAULT_STAPLE_KCAL
+        if today.isoformat() in days_with_logs:
+            today_totals["kcal"] += DEFAULT_STAPLE_KCAL
 
     score_data = _nutrition_score(today_totals)
     kcal_series = [daily_totals[label]["kcal"] for label in labels]

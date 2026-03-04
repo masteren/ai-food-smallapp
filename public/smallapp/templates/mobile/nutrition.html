@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Nutrition | AI Pantry OS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
+</head>
+<body class="page mobile-page">
+  <main class="mobile-shell">
+    <header class="mobile-topbar">
+      <div class="brand">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>栄養スコア</h1>
+          <small>Mobile Nutrition</small>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
+    </header>
+    {% include "mobile/_nav.html" %}
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>本日の評価</h3>
+        <small>Score</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          <li class="mobile-result"><span>グレード</span><strong>{{ score_data.grade }}</strong></li>
+          <li class="mobile-result"><span>スコア</span><strong>{{ score_data.score }} 点</strong></li>
+          <li class="mobile-result"><span>カロリー</span><strong>{{ today_totals.kcal }} kcal</strong></li>
+          <li class="mobile-result"><span>たんぱく質</span><strong>{{ today_totals.protein }} g</strong></li>
+          <li class="mobile-result"><span>野菜スコア</span><strong>{{ today_totals.veg_score }}</strong></li>
+        </ul>
+        <div class="u-mt12">
+          {% for reason in score_data.reasons %}
+            <div class="helper">{{ reason }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>1週間トレンド</h3>
+        <small>kcal / protein</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for i in range(labels|length) %}
+            <li class="mobile-result mobile-result-stack">
+              <div>{{ labels[i] }}</div>
+              <small>kcal {{ kcal_series[i] }} / protein {{ protein_series[i] }}g</small>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>改善提案</h3>
+        <small>Action</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for alert in alerts %}
+            <li class="mobile-result mobile-result-stack">
+              <div>{{ alert }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

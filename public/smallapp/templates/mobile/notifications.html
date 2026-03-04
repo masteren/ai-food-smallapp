@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Notifications | AI Pantry OS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
+</head>
+<body class="page mobile-page">
+  <main class="mobile-shell">
+    <header class="mobile-topbar">
+      <div class="brand">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>通知</h1>
+          <small>Mobile Notifications</small>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
+    </header>
+    {% include "mobile/_nav.html" %}
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>期限アラート</h3>
+        <small>{{ alert_count }} 件</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for alert in alerts %}
+            <li class="mobile-result mobile-result-stack">
+              <div>
+                <div>{{ alert['name'] }}</div>
+                <small>{{ alert['quantity'] }} {{ alert['unit'] }} / 期限 {{ alert['expiry_date'] }}</small>
+              </div>
+            </li>
+          {% else %}
+            <li class="mobile-result muted">期限間近の食材はありません。</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

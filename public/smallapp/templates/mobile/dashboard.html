@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Dashboard | AI Pantry OS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
+</head>
+<body class="page mobile-page">
+  <main class="mobile-shell">
+    <header class="mobile-topbar">
+      <div class="brand">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>ダッシュボード</h1>
+          <small>Mobile Dashboard</small>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
+    </header>
+    {% include "mobile/_nav.html" %}
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>統計</h3>
+        <small>Overview</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          <li class="mobile-result"><span>AI認識回数</span><strong>{{ recognition_count }}</strong></li>
+          <li class="mobile-result"><span>記録レシピ</span><strong>{{ recipe_count }}</strong></li>
+          <li class="mobile-result"><span>期限アラート</span><strong>{{ expiry_alert_count }}</strong></li>
+          <li class="mobile-result"><span>最近使ったレシピ</span><strong>{{ recent_recipes|length }}</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>AI認識ログ</h3>
+        <small>Latest</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for log in recognition_logs %}
+            <li class="mobile-result">
+              <div>
+                <div>{{ log.recognized_at[:16] }}</div>
+                <small>{{ log.items_count }} 件を検出</small>
+              </div>
+              <span class="confidence">完了</span>
+            </li>
+          {% else %}
+            <li class="mobile-result muted">認識ログはまだありません。</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>最近作ったレシピ</h3>
+        <small>History</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for recipe in recent_recipes %}
+            <li class="mobile-result">
+              <div>
+                <div>{{ recipe.title }}</div>
+                <small>{{ recipe.cooked_at_date }}</small>
+              </div>
+              <a class="btn small" href="{{ url_for('mobile_recipe_detail', recipe_id=recipe.id) }}">詳細</a>
+            </li>
+          {% else %}
+            <li class="mobile-result muted">料理履歴はまだありません。</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

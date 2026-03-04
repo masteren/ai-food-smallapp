@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Recipes | AI Pantry OS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
+</head>
+<body class="page mobile-page">
+  <main class="mobile-shell">
+    <header class="mobile-topbar">
+      <div class="brand">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>レシピ提案</h1>
+          <small>Mobile Recipes</small>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <a class="btn small" href="{{ url_for('mobile_search') }}">検索</a>
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
+    </header>
+    {% include "mobile/_nav.html" %}
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>フィルター</h3>
+        <small>Quick / Goal</small>
+      </div>
+      <div class="card-b">
+        <div class="mobile-chips">
+          {% if selected_filter == 'quick' %}
+            <a class="mobile-chip is-active" href="{% if selected_goal %}{{ url_for('mobile_recipes', goal=selected_goal) }}{% else %}{{ url_for('mobile_recipes') }}{% endif %}">時短: ON</a>
+          {% else %}
+            <a class="mobile-chip" href="{% if selected_goal %}{{ url_for('mobile_recipes', filter='quick', goal=selected_goal) }}{% else %}{{ url_for('mobile_recipes', filter='quick') }}{% endif %}">時短</a>
+          {% endif %}
+
+          {% if selected_goal == 'low_fat' %}
+            <a class="mobile-chip is-active" href="{% if selected_filter %}{{ url_for('mobile_recipes', filter=selected_filter) }}{% else %}{{ url_for('mobile_recipes') }}{% endif %}">低脂質: ON</a>
+          {% else %}
+            <a class="mobile-chip" href="{% if selected_filter %}{{ url_for('mobile_recipes', filter=selected_filter, goal='low_fat') }}{% else %}{{ url_for('mobile_recipes', goal='low_fat') }}{% endif %}">低脂質</a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>候補</h3>
+        <small>{{ recipes|length }} 件</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for recipe in recipes %}
+            <li class="mobile-result mobile-result-stack">
+              <div>
+                <div>{{ recipe.title }}</div>
+                <small>一致率 {{ recipe.match_rate }}% / {{ recipe.time }} / {{ recipe.lvl }}</small>
+              </div>
+              <div class="mobile-inline">
+                <span class="mobile-score">{{ recipe.score }}</span>
+                <a class="btn small" href="{{ url_for('mobile_recipe_detail', recipe_id=recipe.id) }}">詳細</a>
+              </div>
+            </li>
+          {% else %}
+            <li class="mobile-result muted">候補がありません。食材を増やして再試行してください。</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

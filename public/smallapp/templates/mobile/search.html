@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Search | AI Pantry OS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
+</head>
+<body class="page mobile-page">
+  <main class="mobile-shell">
+    <header class="mobile-topbar">
+      <div class="brand">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>レシピ検索</h1>
+          <small>Mobile Search</small>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
+    </header>
+    {% include "mobile/_nav.html" %}
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>検索</h3>
+        <small>Keyword</small>
+      </div>
+      <div class="card-b">
+        <form class="form" method="get" action="{{ url_for('mobile_search') }}">
+          <label>食材名・料理名</label>
+          <input type="search" name="q" value="{{ query }}" placeholder="例: 卵スープ / 鶏むね肉" />
+          <button class="btn primary block" type="submit">検索</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>結果</h3>
+        <small>{{ results|length if query else 0 }} 件</small>
+      </div>
+      <div class="card-b">
+        {% if query %}
+          <ul class="mobile-results">
+            {% for recipe in results %}
+              <li class="mobile-result mobile-result-stack">
+                <div>
+                  <div>{{ recipe['title'] }}</div>
+                  <small>{{ recipe['description'] }}</small>
+                </div>
+                <a class="btn small" href="{{ url_for('mobile_recipe_detail', recipe_id=recipe['id']) }}">詳細</a>
+              </li>
+            {% else %}
+              <li class="mobile-result muted">該当するレシピはありません。</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="helper">キーワードを入力して検索してください。</div>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>

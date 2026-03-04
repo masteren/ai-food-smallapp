@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Recipe Detail | AI Pantry OS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
+</head>
+<body class="page mobile-page">
+  <main class="mobile-shell">
+    <header class="mobile-topbar">
+      <div class="brand">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>レシピ詳細</h1>
+          <small>{{ recipe.title }}</small>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <a class="btn small" href="{{ url_for('mobile_recipes') }}">戻る</a>
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
+    </header>
+    {% include "mobile/_nav.html" %}
+
+    {% if edit_success %}
+      <div class="mobile-alert" role="status">{{ edit_success }}</div>
+    {% endif %}
+    {% if edit_error %}
+      <div class="mobile-alert" role="alert">{{ edit_error }}</div>
+    {% endif %}
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>{{ recipe.title }}</h3>
+        <small>概要</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          <li class="mobile-result"><span>一致率</span><strong>{{ match_rate }}%</strong></li>
+          <li class="mobile-result"><span>一致食材</span><strong>{{ matched_count }}/{{ total_ingredients }}</strong></li>
+          <li class="mobile-result"><span>kcal</span><strong>{{ nutrition.kcal }}</strong></li>
+          <li class="mobile-result"><span>protein</span><strong>{{ nutrition.protein }}g</strong></li>
+        </ul>
+        <div class="mobile-actions">
+          <form method="post" action="{{ url_for('mobile_recipe_cook', recipe_id=recipe.id) }}">
+            <button class="btn primary block" type="submit">作った（記録）</button>
+          </form>
+          {% if edit_mode %}
+            <a class="btn block" href="{{ url_for('mobile_recipe_detail', recipe_id=recipe.id) }}">編集を閉じる</a>
+          {% else %}
+            <a class="btn block" href="{{ url_for('mobile_recipe_detail', recipe_id=recipe.id, edit=1) }}">編集</a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    {% if edit_mode %}
+      <section class="card mobile-card">
+        <div class="card-h">
+          <h3>編集</h3>
+          <small>材料 / 手順</small>
+        </div>
+        <div class="card-b">
+          <form class="form" method="post" action="{{ url_for('mobile_recipe_edit', recipe_id=recipe.id) }}">
+            <label>材料（食材名 | 量 | 単位 | 備考）</label>
+            <textarea name="ingredients_text" rows="8">{{ edit_form.ingredients_text }}</textarea>
+            <label>手順（1行1ステップ）</label>
+            <textarea name="steps_text" rows="6">{{ edit_form.steps_text }}</textarea>
+            <button class="btn primary block" type="submit">保存</button>
+          </form>
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>材料</h3>
+        <small>{{ ingredients|length }} 件</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for ing in ingredients %}
+            <li class="mobile-result mobile-result-stack">
+              <div>{{ ing.name }}</div>
+              <small>{{ ing.quantity }} {{ ing.unit }} / {{ ing.note or ingredient_note(ing.name, ing.unit, ing.quantity) }}</small>
+            </li>
+          {% else %}
+            <li class="mobile-result muted">材料情報がありません。</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>手順</h3>
+        <small>{{ steps|length }} step</small>
+      </div>
+      <div class="card-b">
+        <ol class="mobile-steps">
+          {% for step in steps %}
+            <li>{{ step }}</li>
+          {% else %}
+            <li>手順情報がありません。</li>
+          {% endfor %}
+        </ol>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

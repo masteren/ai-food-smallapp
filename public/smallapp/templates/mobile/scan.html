@@ -18,12 +18,13 @@
         </div>
       </div>
       <div class="mobile-top-actions">
-        <a class="btn small" href="{{ url_for('mobile_pantry') }}">在庫</a>
         <form method="post" action="{{ url_for('mobile_logout') }}">
           <button class="btn small" type="submit">ログアウト</button>
         </form>
       </div>
     </header>
+    {% set mobile_active = 'scan' %}
+    {% include "mobile/_nav.html" %}
 
     <section class="card mobile-card">
       <div class="card-h">

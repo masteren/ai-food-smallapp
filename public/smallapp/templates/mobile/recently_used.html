@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile History | AI Pantry OS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=mobile_asset_v) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css', v=mobile_asset_v) }}">
+</head>
+<body class="page mobile-page">
+  <main class="mobile-shell">
+    <header class="mobile-topbar">
+      <div class="brand">
+        <img class="logo" src="{{ url_for('static', filename='big_logo.png') }}" alt="AI Pantry OS">
+        <div>
+          <h1>過去のレシピ</h1>
+          <small>Mobile History</small>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <form method="post" action="{{ url_for('mobile_logout') }}">
+          <button class="btn small" type="submit">ログアウト</button>
+        </form>
+      </div>
+    </header>
+    {% include "mobile/_nav.html" %}
+
+    <section class="card mobile-card">
+      <div class="card-h">
+        <h3>履歴一覧</h3>
+        <small>{{ recipes|length }} 件</small>
+      </div>
+      <div class="card-b">
+        <ul class="mobile-results">
+          {% for recipe in recipes %}
+            <li class="mobile-result mobile-result-stack">
+              <div>
+                <div>{{ recipe['title'] }}</div>
+                <small>最終調理: {{ recipe['last_cooked_date'] }}</small>
+              </div>
+              <a class="btn small" href="{{ url_for('mobile_recipe_detail', recipe_id=recipe['id']) }}">詳細</a>
+            </li>
+          {% else %}
+            <li class="mobile-result muted">まだ履歴がありません。</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

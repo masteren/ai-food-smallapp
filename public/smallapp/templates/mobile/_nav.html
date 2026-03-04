@@ -1,0 +1,10 @@
+<nav class="mobile-nav" aria-label="mobile navigation">
+  <a class="mobile-nav-link{% if mobile_active == 'scan' %} is-active{% endif %}" href="{{ url_for('mobile_scan') }}">スキャン</a>
+  <a class="mobile-nav-link{% if mobile_active == 'pantry' %} is-active{% endif %}" href="{{ url_for('mobile_pantry') }}">在庫</a>
+  <a class="mobile-nav-link{% if mobile_active == 'dashboard' %} is-active{% endif %}" href="{{ url_for('mobile_dashboard') }}">統計</a>
+  <a class="mobile-nav-link{% if mobile_active == 'recipes' %} is-active{% endif %}" href="{{ url_for('mobile_recipes') }}">レシピ</a>
+  <a class="mobile-nav-link{% if mobile_active == 'search' %} is-active{% endif %}" href="{{ url_for('mobile_search') }}">検索</a>
+  <a class="mobile-nav-link{% if mobile_active == 'recently_used' %} is-active{% endif %}" href="{{ url_for('mobile_recently_used') }}">履歴</a>
+  <a class="mobile-nav-link{% if mobile_active == 'nutrition' %} is-active{% endif %}" href="{{ url_for('mobile_nutrition') }}">栄養</a>
+  <a class="mobile-nav-link{% if mobile_active == 'notifications' %} is-active{% endif %}" href="{{ url_for('mobile_notifications') }}">通知</a>
+</nav>

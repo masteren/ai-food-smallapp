@@ -355,6 +355,160 @@ def _build_recipe_detail_context(
     }
 
 
+def _normalize_recipe_filters(selected_filter: str, selected_goal: str) -> Tuple[str, str]:
+    normalized_filter = (selected_filter or "").strip()
+    normalized_goal = (selected_goal or "").strip()
+    if normalized_filter not in {"", "quick"}:
+        normalized_filter = ""
+    if normalized_goal not in {"", "low_fat"}:
+        normalized_goal = ""
+    return normalized_filter, normalized_goal
+
+
+def _build_ranked_recipes(user_id: int, selected_filter: str = "", selected_goal: str = "") -> List[Dict[str, object]]:
+    pantry_items = fetch_pantry_items(user_id)
+    pantry_names = {item["name"] for item in pantry_items}
+    recipes_data: List[Dict[str, object]] = []
+
+    for recipe in fetch_recipes_with_ingredients():
+        ingredients = recipe.get("ingredients") or []
+        if not ingredients:
+            ingredients = json.loads(recipe["ingredients_json"])
+
+        required = [ing for ing in ingredients if ing.get("role") == "required"]
+        if not required:
+            required = ingredients
+        required_names = {ing["name"] for ing in required}
+        matched_required = [ing for ing in required if ing["name"] in pantry_names]
+
+        total_required = max(1, len(required_names))
+        match_rate = len(matched_required) / total_required
+        missing_required = total_required - len(matched_required)
+
+        if match_rate < 0.6 and missing_required > 2:
+            continue
+
+        nutrition = json.loads(recipe["nutrition_json"])
+        steps = json.loads(recipe.get("steps_json", "[]"))
+        if not isinstance(steps, list):
+            steps = []
+        step_texts = [str(s) for s in steps]
+        cook_minutes = _estimate_recipe_minutes(ingredients, step_texts)
+        cook_time = f"{cook_minutes}分"
+        level_stars = _recipe_level_stars(ingredients, step_texts)
+
+        if selected_filter == "quick" and cook_minutes > 15:
+            continue
+
+        health_score = 0
+        if nutrition.get("protein", 0) >= 30:
+            health_score += 10
+        if nutrition.get("veg_score", 0) >= 2:
+            health_score += 10
+        if nutrition.get("kcal", 0) <= 500:
+            health_score += 10
+        if nutrition.get("fat", 0) <= 15:
+            health_score += 10
+        if nutrition.get("carb", 0) >= 70:
+            health_score -= 10
+        health_score = max(0, min(40, health_score))
+
+        if selected_goal == "low_fat" and nutrition.get("fat", 0) > 15:
+            continue
+
+        match_score = max(0, min(60, int(match_rate * 60) - missing_required * 8))
+        total_score = match_score + health_score
+
+        if total_score >= 90:
+            grade = "SSS"
+        elif total_score >= 80:
+            grade = "SS"
+        elif total_score >= 70:
+            grade = "S"
+        elif total_score >= 60:
+            grade = "A"
+        elif total_score >= 50:
+            grade = "B"
+        else:
+            grade = "C"
+
+        recipes_data.append(
+            {
+                **recipe,
+                "match_count": len(matched_required),
+                "match_items": matched_required,
+                "match_rate": int(match_rate * 100),
+                "missing_required": missing_required,
+                "health_score": health_score,
+                "total_score": total_score,
+                "grade": grade,
+                "score": grade,
+                "time": cook_time,
+                "lvl": level_stars,
+            }
+        )
+
+    recipes_data.sort(key=lambda r: r["total_score"], reverse=True)
+    return recipes_data[:15]
+
+
+def _build_search_results(query: str) -> List[Dict[str, object]]:
+    if not query:
+        return []
+
+    results = search_recipes(query)
+    for recipe in results:
+        try:
+            ingredients = json.loads(recipe.get("ingredients_json", "[]"))
+            recipe["ingredients"] = ingredients
+        except (json.JSONDecodeError, TypeError):
+            recipe["ingredients"] = []
+    return results
+
+
+def _build_recently_used_data(user_id: int, limit: int = 50) -> List[Dict[str, object]]:
+    recipes = fetch_recently_used_recipes(user_id, limit=limit)
+    recipes_data = []
+    for recipe in recipes:
+        try:
+            ingredients = json.loads(recipe.get("ingredients_json", "[]"))
+        except (json.JSONDecodeError, TypeError):
+            ingredients = []
+        recipes_data.append(
+            {
+                "id": recipe["id"],
+                "title": recipe["title"],
+                "description": recipe["description"],
+                "ingredients": ingredients,
+                "last_cooked_date": recipe["last_cooked_date"],
+            }
+        )
+    return recipes_data
+
+
+def _build_dashboard_data(user_id: int) -> Dict[str, object]:
+    recognition_count = len(fetch_recognition_logs(user_id, limit=100))
+    recipe_count = fetch_cooking_log_count(user_id)
+    expiry_alerts = fetch_expiry_alerts(user_id)
+    recognition_logs = fetch_recognition_logs(user_id, limit=3)
+    recent_recipes_raw = fetch_recently_used_recipes(user_id, limit=3)
+    recent_recipes = [
+        {
+            "id": recipe["id"],
+            "title": recipe["title"],
+            "cooked_at_date": recipe.get("last_cooked_date"),
+        }
+        for recipe in recent_recipes_raw
+    ]
+    return {
+        "recognition_count": recognition_count,
+        "recipe_count": recipe_count,
+        "expiry_alert_count": len(expiry_alerts),
+        "recognition_logs": recognition_logs,
+        "recent_recipes": recent_recipes,
+    }
+
+
 def _is_mobile_client() -> bool:
     # Prefer Client Hints when available, fallback to User-Agent keyword matching.
     ch_mobile = (request.headers.get("Sec-CH-UA-Mobile") or "").strip()
@@ -729,38 +883,136 @@ def mobile_pantry_delete(item_id: int):
     return redirect(url_for("mobile_pantry"))
 
 
+@app.get("/m/dashboard")
+@mobile_login_required
+def mobile_dashboard():
+    user_id = session["user_id"]
+    return render_template(
+        "mobile/dashboard.html",
+        user=current_user(),
+        mobile_active="dashboard",
+        **_build_dashboard_data(user_id),
+    )
+
+
+@app.get("/m/recipes")
+@mobile_login_required
+def mobile_recipes():
+    selected_filter, selected_goal = _normalize_recipe_filters(
+        request.args.get("filter", ""),
+        request.args.get("goal", ""),
+    )
+    recipes_data = _build_ranked_recipes(session["user_id"], selected_filter, selected_goal)
+    return render_template(
+        "mobile/recipes.html",
+        user=current_user(),
+        mobile_active="recipes",
+        recipes=recipes_data,
+        selected_filter=selected_filter,
+        selected_goal=selected_goal,
+    )
+
+
+@app.get("/m/search")
+@mobile_login_required
+def mobile_search():
+    query = request.args.get("q", "").strip()
+    results = _build_search_results(query)
+    return render_template(
+        "mobile/search.html",
+        user=current_user(),
+        mobile_active="search",
+        query=query,
+        results=results,
+    )
+
+
+@app.get("/m/recently-used")
+@app.get("/m/recently_used")
+@mobile_login_required
+def mobile_recently_used():
+    recipes_data = _build_recently_used_data(session["user_id"], limit=50)
+    return render_template(
+        "mobile/recently_used.html",
+        user=current_user(),
+        mobile_active="recently_used",
+        recipes=recipes_data,
+    )
+
+
+@app.get("/m/recipes/<int:recipe_id>")
+@mobile_login_required
+def mobile_recipe_detail(recipe_id: int):
+    context = _build_recipe_detail_context(
+        recipe_id,
+        edit_mode=request.args.get("edit") == "1",
+        edit_success="レシピを更新しました。" if request.args.get("saved") == "1" else "",
+    )
+    if not context:
+        return redirect(url_for("mobile_recipes"))
+    context["mobile_active"] = "recipes"
+    return render_template("mobile/recipe_detail.html", **context)
+
+
+@app.post("/m/recipes/<int:recipe_id>/edit")
+@mobile_login_required
+def mobile_recipe_edit(recipe_id: int):
+    recipe = fetch_recipe_by_id(recipe_id)
+    if not recipe:
+        return redirect(url_for("mobile_recipes"))
+
+    form_values = {
+        "ingredients_text": request.form.get("ingredients_text", "").strip(),
+        "steps_text": request.form.get("steps_text", "").strip(),
+    }
+
+    try:
+        ingredients = _parse_recipe_ingredients_text(form_values["ingredients_text"])
+        steps = _parse_recipe_steps_text(form_values["steps_text"])
+        title = str(recipe.get("title", "") or "")
+        description = str(recipe.get("description", "") or "")
+        nutrition_json = recipe.get("nutrition_json", "{}")
+        if not isinstance(nutrition_json, str):
+            nutrition_json = json.dumps(nutrition_json, ensure_ascii=False)
+
+        update_recipe(
+            recipe_id,
+            title,
+            description,
+            json.dumps(steps, ensure_ascii=False),
+            json.dumps(ingredients, ensure_ascii=False),
+            nutrition_json,
+        )
+    except ValueError as exc:
+        context = _build_recipe_detail_context(
+            recipe_id,
+            edit_mode=True,
+            edit_error=str(exc),
+            edit_form=form_values,
+        )
+        if not context:
+            return redirect(url_for("mobile_recipes"))
+        context["mobile_active"] = "recipes"
+        return render_template("mobile/recipe_detail.html", **context)
+
+    return redirect(url_for("mobile_recipe_detail", recipe_id=recipe_id, saved=1, edit=1))
+
+
+@app.post("/m/recipes/<int:recipe_id>/cook")
+@mobile_login_required
+def mobile_recipe_cook(recipe_id: int):
+    add_cooking_log(session["user_id"], recipe_id, date.today().isoformat())
+    return redirect(url_for("mobile_recipe_detail", recipe_id=recipe_id))
+
+
 @app.get("/dashboard")
 @login_required
 def dashboard():
     user_id = session["user_id"]
-
-    # Get statistics
-    recognition_count = len(fetch_recognition_logs(user_id, limit=100))
-    recipe_count = fetch_cooking_log_count(user_id)
-    expiry_alerts = fetch_expiry_alerts(user_id)
-
-    # Get recent logs
-    recognition_logs = fetch_recognition_logs(user_id, limit=3)
-
-    # Get recent cooked recipes (not limited to current week)
-    recent_recipes_raw = fetch_recently_used_recipes(user_id, limit=3)
-    recent_recipes = [
-        {
-            "id": recipe["id"],
-            "title": recipe["title"],
-            "cooked_at_date": recipe.get("last_cooked_date"),
-        }
-        for recipe in recent_recipes_raw
-    ]
-
     return render_template(
         "dashboard.html",
         user=current_user(),
-        recognition_count=recognition_count,
-        recipe_count=recipe_count,
-        expiry_alert_count=len(expiry_alerts),
-        recognition_logs=recognition_logs,
-        recent_recipes=recent_recipes,
+        **_build_dashboard_data(user_id),
     )
 
 
@@ -1123,96 +1375,11 @@ def pantry_delete(item_id: int):
 @app.get("/recipes")
 @login_required
 def recipes():
-    selected_filter = request.args.get("filter", "").strip()
-    selected_goal = request.args.get("goal", "").strip()
-    if selected_filter not in {"", "quick"}:
-        selected_filter = ""
-    if selected_goal not in {"", "low_fat"}:
-        selected_goal = ""
-
-    pantry_items = fetch_pantry_items(session["user_id"])
-    pantry_names = {item["name"] for item in pantry_items}
-    recipes_data = []
-    for recipe in fetch_recipes_with_ingredients():
-        ingredients = recipe.get("ingredients") or []
-        if not ingredients:
-            ingredients = json.loads(recipe["ingredients_json"])
-
-        required = [ing for ing in ingredients if ing.get("role") == "required"]
-        if not required:
-            required = ingredients
-        required_names = {ing["name"] for ing in required}
-        matched_required = [ing for ing in required if ing["name"] in pantry_names]
-
-        total_required = max(1, len(required_names))
-        match_rate = len(matched_required) / total_required
-        missing_required = total_required - len(matched_required)
-
-        if match_rate < 0.6 and missing_required > 2:
-            continue
-
-        nutrition = json.loads(recipe["nutrition_json"])
-        steps = json.loads(recipe.get("steps_json", "[]"))
-        if not isinstance(steps, list):
-            steps = []
-        step_texts = [str(s) for s in steps]
-        cook_minutes = _estimate_recipe_minutes(ingredients, step_texts)
-        cook_time = f"{cook_minutes}分"
-        level_stars = _recipe_level_stars(ingredients, step_texts)
-
-        # Optional UI filters from query params.
-        if selected_filter == "quick" and cook_minutes > 15:
-            continue
-
-        health_score = 0
-        if nutrition.get("protein", 0) >= 30:
-            health_score += 10
-        if nutrition.get("veg_score", 0) >= 2:
-            health_score += 10
-        if nutrition.get("kcal", 0) <= 500:
-            health_score += 10
-        if nutrition.get("fat", 0) <= 15:
-            health_score += 10
-        if nutrition.get("carb", 0) >= 70:
-            health_score -= 10
-        health_score = max(0, min(40, health_score))
-
-        if selected_goal == "low_fat" and nutrition.get("fat", 0) > 15:
-            continue
-
-        match_score = max(0, min(60, int(match_rate * 60) - missing_required * 8))
-        total_score = match_score + health_score
-
-        if total_score >= 90:
-            grade = "SSS"
-        elif total_score >= 80:
-            grade = "SS"
-        elif total_score >= 70:
-            grade = "S"
-        elif total_score >= 60:
-            grade = "A"
-        elif total_score >= 50:
-            grade = "B"
-        else:
-            grade = "C"
-
-        recipes_data.append(
-            {
-                **recipe,
-                "match_count": len(matched_required),
-                "match_items": matched_required,
-                "match_rate": int(match_rate * 100),
-                "missing_required": missing_required,
-                "health_score": health_score,
-                "total_score": total_score,
-                "grade": grade,
-                "score": grade,
-                "time": cook_time,
-                "lvl": level_stars,
-            }
-        )
-    recipes_data.sort(key=lambda r: r["total_score"], reverse=True)
-    recipes_data = recipes_data[:15]
+    selected_filter, selected_goal = _normalize_recipe_filters(
+        request.args.get("filter", ""),
+        request.args.get("goal", ""),
+    )
+    recipes_data = _build_ranked_recipes(session["user_id"], selected_filter, selected_goal)
     return render_template(
         "recipes.html",
         recipes=recipes_data,
@@ -1226,18 +1393,7 @@ def recipes():
 @login_required
 def search():
     query = request.args.get("q", "").strip()
-    results = []
-
-    if query:
-        results = search_recipes(query)
-        # 计算每个菜谱的匹配度（基于食材）
-        for recipe in results:
-            try:
-                ingredients = json.loads(recipe.get("ingredients_json", "[]"))
-                recipe["ingredients"] = ingredients
-            except (json.JSONDecodeError, TypeError):
-                recipe["ingredients"] = []
-
+    results = _build_search_results(query)
     return render_template(
         "search.html",
         query=query,
@@ -1251,25 +1407,7 @@ def search():
 @login_required
 def recently_used():
     """Display recently used recipes efficiently."""
-    user_id = session["user_id"]
-    recipes = fetch_recently_used_recipes(user_id, limit=50)
-
-    # Format the data for display
-    recipes_data = []
-    for recipe in recipes:
-        try:
-            ingredients = json.loads(recipe.get("ingredients_json", "[]"))
-        except (json.JSONDecodeError, TypeError):
-            ingredients = []
-
-        recipes_data.append({
-            "id": recipe["id"],
-            "title": recipe["title"],
-            "description": recipe["description"],
-            "ingredients": ingredients,
-            "last_cooked_date": recipe["last_cooked_date"],
-        })
-
+    recipes_data = _build_recently_used_data(session["user_id"], limit=50)
     return render_template(
         "recently_used.html",
         recipes=recipes_data,
@@ -1418,22 +1556,15 @@ def _nutrition_demo_totals(labels: List[str]) -> Tuple[Dict[str, Dict[str, float
 DEFAULT_STAPLE_KCAL = 252  # Approx. one bowl of cooked rice.
 
 
-@app.get("/nutrition")
-@login_required
-def nutrition():
+def _build_nutrition_context(user_id: int, use_demo: bool = False) -> Dict[str, object]:
     recipes_map = {recipe["id"]: recipe for recipe in fetch_recipes()}
-
     today = date.today()
     labels = _current_week_monday_to_sunday(today)
 
     daily_totals = {label: {"kcal": 0, "protein": 0} for label in labels}
     today_totals = {"kcal": 0, "protein": 0, "veg_score": 0}
 
-    logs = fetch_cooking_logs_range(
-        session["user_id"], labels[0], labels[-1]
-    )
-    use_demo = request.args.get("demo") == "1"
-
+    logs = fetch_cooking_logs_range(user_id, labels[0], labels[-1])
     if use_demo or not logs:
         daily_totals, today_totals = _nutrition_demo_totals(labels)
     else:
@@ -1453,7 +1584,6 @@ def nutrition():
                 today_totals["protein"] += nutrition.get("protein", 0)
                 today_totals["veg_score"] += nutrition.get("veg_score", 0)
 
-        # Add default staple kcal once per day when there is at least one meal log.
         for day_key in days_with_logs:
             daily_totals[day_key]["kcal"] += DEFAULT_STAPLE_KCAL
         if today.isoformat() in days_with_logs:
@@ -1475,7 +1605,7 @@ def nutrition():
             "夕食の野菜量をもう1皿増やすとさらに安定します",
         ]
 
-    pantry_items = fetch_pantry_items(session["user_id"])
+    pantry_items = fetch_pantry_items(user_id)
     pantry_names = {item["name"] for item in pantry_items}
     shopping_list = []
     if today_totals["protein"] < 40:
@@ -1489,16 +1619,51 @@ def nutrition():
     if not shopping_list:
         shopping_list = ["牛乳", "卵"]
 
+    return {
+        "score_data": score_data,
+        "labels": labels,
+        "kcal_series": kcal_series,
+        "protein_series": protein_series,
+        "alerts": alerts,
+        "shopping_list": shopping_list,
+        "today_totals": today_totals,
+    }
+
+
+@app.get("/m/nutrition")
+@mobile_login_required
+def mobile_nutrition():
+    use_demo = request.args.get("demo") == "1"
+    return render_template(
+        "mobile/nutrition.html",
+        user=current_user(),
+        mobile_active="nutrition",
+        **_build_nutrition_context(session["user_id"], use_demo=use_demo),
+    )
+
+
+@app.get("/m/notifications")
+@mobile_login_required
+def mobile_notifications():
+    user_id = session["user_id"]
+    expiry_alerts = fetch_expiry_alerts(user_id)
+    return render_template(
+        "mobile/notifications.html",
+        user=current_user(),
+        mobile_active="notifications",
+        alerts=expiry_alerts,
+        alert_count=len(expiry_alerts),
+    )
+
+
+@app.get("/nutrition")
+@login_required
+def nutrition():
+    use_demo = request.args.get("demo") == "1"
     return render_template(
         "nutrition.html",
         user=current_user(),
-        score_data=score_data,
-        labels=labels,
-        kcal_series=kcal_series,
-        protein_series=protein_series,
-        alerts=alerts,
-        shopping_list=shopping_list,
-        today_totals=today_totals,
+        **_build_nutrition_context(session["user_id"], use_demo=use_demo),
     )
 
 

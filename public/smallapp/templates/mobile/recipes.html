@@ -33,16 +33,22 @@
       </div>
       <div class="card-b">
         <div class="mobile-chips">
-          {% if selected_filter == 'quick' %}
-            <a class="mobile-chip is-active" href="{% if selected_goal %}{{ url_for('mobile_recipes', goal=selected_goal) }}{% else %}{{ url_for('mobile_recipes') }}{% endif %}">時短: ON</a>
+          {% if selected_view == 'all' %}
+            <a class="mobile-chip is-active" href="{{ url_for('mobile_recipes', filter=selected_filter or None, goal=selected_goal or None) }}">すべてのレシピ: ON</a>
           {% else %}
-            <a class="mobile-chip" href="{% if selected_goal %}{{ url_for('mobile_recipes', filter='quick', goal=selected_goal) }}{% else %}{{ url_for('mobile_recipes', filter='quick') }}{% endif %}">時短</a>
+            <a class="mobile-chip" href="{{ url_for('mobile_recipes', filter=selected_filter or None, goal=selected_goal or None, view='all') }}">すべてのレシピ</a>
+          {% endif %}
+
+          {% if selected_filter == 'quick' %}
+            <a class="mobile-chip is-active" href="{% if selected_view %}{{ url_for('mobile_recipes', goal=selected_goal or None, view=selected_view) }}{% elif selected_goal %}{{ url_for('mobile_recipes', goal=selected_goal) }}{% else %}{{ url_for('mobile_recipes') }}{% endif %}">時短: ON</a>
+          {% else %}
+            <a class="mobile-chip" href="{% if selected_view and selected_goal %}{{ url_for('mobile_recipes', filter='quick', goal=selected_goal, view=selected_view) }}{% elif selected_view %}{{ url_for('mobile_recipes', filter='quick', view=selected_view) }}{% elif selected_goal %}{{ url_for('mobile_recipes', filter='quick', goal=selected_goal) }}{% else %}{{ url_for('mobile_recipes', filter='quick') }}{% endif %}">時短</a>
           {% endif %}
 
           {% if selected_goal == 'low_fat' %}
-            <a class="mobile-chip is-active" href="{% if selected_filter %}{{ url_for('mobile_recipes', filter=selected_filter) }}{% else %}{{ url_for('mobile_recipes') }}{% endif %}">低脂質: ON</a>
+            <a class="mobile-chip is-active" href="{% if selected_view and selected_filter %}{{ url_for('mobile_recipes', filter=selected_filter, view=selected_view) }}{% elif selected_view %}{{ url_for('mobile_recipes', view=selected_view) }}{% elif selected_filter %}{{ url_for('mobile_recipes', filter=selected_filter) }}{% else %}{{ url_for('mobile_recipes') }}{% endif %}">低脂質: ON</a>
           {% else %}
-            <a class="mobile-chip" href="{% if selected_filter %}{{ url_for('mobile_recipes', filter=selected_filter, goal='low_fat') }}{% else %}{{ url_for('mobile_recipes', goal='low_fat') }}{% endif %}">低脂質</a>
+            <a class="mobile-chip" href="{% if selected_view and selected_filter %}{{ url_for('mobile_recipes', filter=selected_filter, goal='low_fat', view=selected_view) }}{% elif selected_view %}{{ url_for('mobile_recipes', goal='low_fat', view=selected_view) }}{% elif selected_filter %}{{ url_for('mobile_recipes', filter=selected_filter, goal='low_fat') }}{% else %}{{ url_for('mobile_recipes', goal='low_fat') }}{% endif %}">低脂質</a>
           {% endif %}
         </div>
       </div>

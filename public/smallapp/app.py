@@ -355,17 +355,29 @@ def _build_recipe_detail_context(
     }
 
 
-def _normalize_recipe_filters(selected_filter: str, selected_goal: str) -> Tuple[str, str]:
+def _normalize_recipe_filters(
+    selected_filter: str,
+    selected_goal: str,
+    selected_view: str = "",
+) -> Tuple[str, str, str]:
     normalized_filter = (selected_filter or "").strip()
     normalized_goal = (selected_goal or "").strip()
+    normalized_view = (selected_view or "").strip()
     if normalized_filter not in {"", "quick"}:
         normalized_filter = ""
     if normalized_goal not in {"", "low_fat"}:
         normalized_goal = ""
-    return normalized_filter, normalized_goal
+    if normalized_view not in {"", "all"}:
+        normalized_view = ""
+    return normalized_filter, normalized_goal, normalized_view
 
 
-def _build_ranked_recipes(user_id: int, selected_filter: str = "", selected_goal: str = "") -> List[Dict[str, object]]:
+def _build_ranked_recipes(
+    user_id: int,
+    selected_filter: str = "",
+    selected_goal: str = "",
+    selected_view: str = "",
+) -> List[Dict[str, object]]:
     pantry_items = fetch_pantry_items(user_id)
     pantry_names = {item["name"] for item in pantry_items}
     recipes_data: List[Dict[str, object]] = []
@@ -385,7 +397,7 @@ def _build_ranked_recipes(user_id: int, selected_filter: str = "", selected_goal
         match_rate = len(matched_required) / total_required
         missing_required = total_required - len(matched_required)
 
-        if match_rate < 0.6 and missing_required > 2:
+        if selected_view != "all" and match_rate < 0.6 and missing_required > 2:
             continue
 
         nutrition = json.loads(recipe["nutrition_json"])
@@ -449,6 +461,8 @@ def _build_ranked_recipes(user_id: int, selected_filter: str = "", selected_goal
         )
 
     recipes_data.sort(key=lambda r: r["total_score"], reverse=True)
+    if selected_view == "all":
+        return recipes_data
     return recipes_data[:15]
 
 
@@ -898,11 +912,17 @@ def mobile_dashboard():
 @app.get("/m/recipes")
 @mobile_login_required
 def mobile_recipes():
-    selected_filter, selected_goal = _normalize_recipe_filters(
+    selected_filter, selected_goal, selected_view = _normalize_recipe_filters(
         request.args.get("filter", ""),
         request.args.get("goal", ""),
+        request.args.get("view", ""),
     )
-    recipes_data = _build_ranked_recipes(session["user_id"], selected_filter, selected_goal)
+    recipes_data = _build_ranked_recipes(
+        session["user_id"],
+        selected_filter,
+        selected_goal,
+        selected_view,
+    )
     return render_template(
         "mobile/recipes.html",
         user=current_user(),
@@ -910,6 +930,7 @@ def mobile_recipes():
         recipes=recipes_data,
         selected_filter=selected_filter,
         selected_goal=selected_goal,
+        selected_view=selected_view,
     )
 
 
@@ -1260,11 +1281,13 @@ def vision_ingredients():
         return jsonify({"error": "empty_image"}), 400
 
     mime_type = file.mimetype or "image/jpeg"
+    user_id = session["user_id"]
     prefer_cache = request.headers.get("X-Demo-Image") == "1"
     cache_path = _demo_cache_path(image_bytes)
     cached_ingredients = _read_demo_cache(cache_path)
 
     if prefer_cache and cached_ingredients is not None:
+        add_recognition_log(user_id, datetime.now().isoformat(), len(cached_ingredients))
         response = jsonify({"ingredients": cached_ingredients})
         response.headers["X-Cache-Status"] = "Cached"
         return response
@@ -1273,6 +1296,7 @@ def vision_ingredients():
         ingredients = recognize_ingredients_from_bytes(image_bytes, mime_type)
     except MissingAPIKeyError as exc:
         if cached_ingredients is not None:
+            add_recognition_log(user_id, datetime.now().isoformat(), len(cached_ingredients))
             response = jsonify({"ingredients": cached_ingredients})
             response.headers["X-Cache-Status"] = "Cached"
             response.headers["X-Cache-Fallback"] = "1"
@@ -1280,6 +1304,7 @@ def vision_ingredients():
         return jsonify({"error": "missing_api_key", "detail": str(exc)}), 500
     except VisionTimeoutError as exc:
         if cached_ingredients is not None:
+            add_recognition_log(user_id, datetime.now().isoformat(), len(cached_ingredients))
             response = jsonify({"ingredients": cached_ingredients})
             response.headers["X-Cache-Status"] = "Cached"
             response.headers["X-Cache-Fallback"] = "1"
@@ -1287,6 +1312,7 @@ def vision_ingredients():
         return jsonify({"error": "timeout", "detail": str(exc)}), 504
     except NonJsonResponseError as exc:
         if cached_ingredients is not None:
+            add_recognition_log(user_id, datetime.now().isoformat(), len(cached_ingredients))
             response = jsonify({"ingredients": cached_ingredients})
             response.headers["X-Cache-Status"] = "Cached"
             response.headers["X-Cache-Fallback"] = "1"
@@ -1294,6 +1320,7 @@ def vision_ingredients():
         return jsonify({"error": "non_json_response", "detail": str(exc)}), 502
     except OpenAIVisionError as exc:
         if cached_ingredients is not None:
+            add_recognition_log(user_id, datetime.now().isoformat(), len(cached_ingredients))
             response = jsonify({"ingredients": cached_ingredients})
             response.headers["X-Cache-Status"] = "Cached"
             response.headers["X-Cache-Fallback"] = "1"
@@ -1301,6 +1328,7 @@ def vision_ingredients():
         return jsonify({"error": "vision_error", "detail": str(exc)}), 502
     except Exception:
         if cached_ingredients is not None:
+            add_recognition_log(user_id, datetime.now().isoformat(), len(cached_ingredients))
             response = jsonify({"ingredients": cached_ingredients})
             response.headers["X-Cache-Status"] = "Cached"
             response.headers["X-Cache-Fallback"] = "1"
@@ -1310,6 +1338,7 @@ def vision_ingredients():
     if ingredients:
         _write_demo_cache(cache_path, ingredients)
 
+    add_recognition_log(user_id, datetime.now().isoformat(), len(ingredients))
     response = jsonify({"ingredients": ingredients})
     response.headers["X-Cache-Status"] = "Live"
     return response
@@ -1375,17 +1404,24 @@ def pantry_delete(item_id: int):
 @app.get("/recipes")
 @login_required
 def recipes():
-    selected_filter, selected_goal = _normalize_recipe_filters(
+    selected_filter, selected_goal, selected_view = _normalize_recipe_filters(
         request.args.get("filter", ""),
         request.args.get("goal", ""),
+        request.args.get("view", ""),
     )
-    recipes_data = _build_ranked_recipes(session["user_id"], selected_filter, selected_goal)
+    recipes_data = _build_ranked_recipes(
+        session["user_id"],
+        selected_filter,
+        selected_goal,
+        selected_view,
+    )
     return render_template(
         "recipes.html",
         recipes=recipes_data,
         user=current_user(),
         selected_filter=selected_filter,
         selected_goal=selected_goal,
+        selected_view=selected_view,
     )
 
 

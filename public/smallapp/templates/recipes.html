@@ -11,16 +11,22 @@
       <p>不足栄養（野菜/食物繊維など）を補う優先度で並び替え可能。</p>
     </div>
     <div class="smallrow">
-      {% if selected_filter == 'quick' %}
-        <a class="pill is-active" href="{% if selected_goal %}{{ url_for('recipes', goal=selected_goal) }}{% else %}{{ url_for('recipes') }}{% endif %}">フィルター: 時短 ✓</a>
+      {% if selected_view == 'all' %}
+        <a class="pill is-active" href="{{ url_for('recipes', filter=selected_filter or None, goal=selected_goal or None) }}">すべてのレシピ ✓</a>
       {% else %}
-        <a class="pill" href="{% if selected_goal %}{{ url_for('recipes', filter='quick', goal=selected_goal) }}{% else %}{{ url_for('recipes', filter='quick') }}{% endif %}">フィルター: 時短</a>
+        <a class="pill" href="{{ url_for('recipes', filter=selected_filter or None, goal=selected_goal or None, view='all') }}">すべてのレシピ</a>
+      {% endif %}
+
+      {% if selected_filter == 'quick' %}
+        <a class="pill is-active" href="{% if selected_view %}{{ url_for('recipes', goal=selected_goal or None, view=selected_view) }}{% elif selected_goal %}{{ url_for('recipes', goal=selected_goal) }}{% else %}{{ url_for('recipes') }}{% endif %}">フィルター: 時短 ✓</a>
+      {% else %}
+        <a class="pill" href="{% if selected_view and selected_goal %}{{ url_for('recipes', filter='quick', goal=selected_goal, view=selected_view) }}{% elif selected_view %}{{ url_for('recipes', filter='quick', view=selected_view) }}{% elif selected_goal %}{{ url_for('recipes', filter='quick', goal=selected_goal) }}{% else %}{{ url_for('recipes', filter='quick') }}{% endif %}">フィルター: 時短</a>
       {% endif %}
 
       {% if selected_goal == 'low_fat' %}
-        <a class="pill is-active" href="{% if selected_filter %}{{ url_for('recipes', filter=selected_filter) }}{% else %}{{ url_for('recipes') }}{% endif %}">目的: 低脂質 ✓</a>
+        <a class="pill is-active" href="{% if selected_view and selected_filter %}{{ url_for('recipes', filter=selected_filter, view=selected_view) }}{% elif selected_view %}{{ url_for('recipes', view=selected_view) }}{% elif selected_filter %}{{ url_for('recipes', filter=selected_filter) }}{% else %}{{ url_for('recipes') }}{% endif %}">目的: 低脂質 ✓</a>
       {% else %}
-        <a class="pill" href="{% if selected_filter %}{{ url_for('recipes', filter=selected_filter, goal='low_fat') }}{% else %}{{ url_for('recipes', goal='low_fat') }}{% endif %}">目的: 低脂質</a>
+        <a class="pill" href="{% if selected_view and selected_filter %}{{ url_for('recipes', filter=selected_filter, goal='low_fat', view=selected_view) }}{% elif selected_view %}{{ url_for('recipes', goal='low_fat', view=selected_view) }}{% elif selected_filter %}{{ url_for('recipes', filter=selected_filter, goal='low_fat') }}{% else %}{{ url_for('recipes', goal='low_fat') }}{% endif %}">目的: 低脂質</a>
       {% endif %}
       <a class="btn" href="{{ url_for('pantry') }}">所持食材へ</a>
     </div>

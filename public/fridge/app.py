@@ -48,6 +48,7 @@ app.secret_key = os.environ["FLASK_SECRET_KEY"]
 app.config.update(
     SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE") == "1",
     SESSION_COOKIE_SAMESITE="Lax",
+    MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # reject uploads over 10 MB
 )
 
 
@@ -1422,7 +1423,7 @@ def pantry_update(item_id: int):
     return redirect(url_for("pantry"))
 
 
-@app.get("/pantry/delete/<int:item_id>")
+@app.post("/pantry/delete/<int:item_id>")
 @login_required
 def pantry_delete(item_id: int):
     delete_pantry_item(session["user_id"], item_id)

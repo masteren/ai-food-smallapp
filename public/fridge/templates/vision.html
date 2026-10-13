@@ -42,6 +42,9 @@
             <button class="btn btn-accent" type="button" id="sampleSelectButton" onclick="openSamplePanel()">サンプル画像から選ぶ</button>
             <span class="sample-picked-badge is-hidden" id="samplePickedBadge">サンプル選択済み</span>
           </div>
+          {% if demo_only %}
+          <div class="helper u-mt8">デモ版では「サンプル画像から選ぶ」の画像で AI 認識をお試しいただけます。</div>
+          {% endif %}
         </div>
         <div class="helper u-mt12" id="statusRow">
           <span id="statusText">待機中</span>
@@ -272,6 +275,11 @@
       const cacheStatus = res.headers.get('X-Cache-Status');
       const isFallback = res.headers.get('X-Cache-Fallback') === '1';
       setCacheBadge(cacheStatus);
+      if(data.error === 'demo_only'){
+        statusText.textContent = 'デモ版のため、サンプル画像のみ認識できます。「サンプル画像から選ぶ」からお試しください。';
+        renderRows([]);
+        return;
+      }
       if(!res.ok){
         statusText.textContent = data.error ? `エラー: ${data.error}` : 'エラーが発生しました。';
         renderRows([]);

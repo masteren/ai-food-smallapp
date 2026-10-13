@@ -53,6 +53,9 @@ DEMO_IMAGE_GROUPS: Tuple[Tuple[str, str], ...] = (
 )
 DEMO_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 DEMO_CACHE_VERSION = "v2-ja"
+# DEMO_ONLY=1: never call OpenAI; only sample images with a cached result can be recognized.
+DEMO_ONLY = os.environ.get("DEMO_ONLY") == "1"
+_demo_cache_hits: Dict[str, Tuple[float, bool]] = {}
 
 
 with app.app_context():
@@ -100,6 +103,8 @@ def _build_demo_catalog() -> List[Dict[str, List[str]]]:
                 if path.is_file() and path.suffix.lower() in DEMO_IMAGE_EXTS
             ]
             for path in sorted(files):
+                if DEMO_ONLY and not _has_demo_cache(path):
+                    continue
                 images.append(url_for("static", filename=f"{rel_path}/{path.name}"))
         catalog.append({"key": key, "images": images})
     return catalog
@@ -109,6 +114,15 @@ def _demo_cache_path(image_bytes: bytes) -> Path:
     digest = hashlib.sha256(f"{DEMO_CACHE_VERSION}:".encode("utf-8") + image_bytes).hexdigest()
     cache_dir = Path(app.root_path) / "static" / "demo_cache"
     return cache_dir / f"{digest}.json"
+
+
+def _has_demo_cache(path: Path) -> bool:
+    mtime = path.stat().st_mtime
+    hit = _demo_cache_hits.get(str(path))
+    if hit is None or hit[0] != mtime:
+        hit = (mtime, _demo_cache_path(path.read_bytes()).exists())
+        _demo_cache_hits[str(path)] = hit
+    return hit[1]
 
 
 def _sha256_digest(image_bytes: bytes) -> str:
@@ -603,6 +617,11 @@ def mobile_login_required(view):
         return view(*args, **kwargs)
 
     return wrapped
+
+
+@app.context_processor
+def inject_demo_only():
+    return {"demo_only": DEMO_ONLY}
 
 
 @app.context_processor
@@ -1194,6 +1213,8 @@ def api_recognize():
                 "items": _format_recognize_items(cached_ingredients),
             }
         )
+    if DEMO_ONLY:
+        return jsonify({"ok": False, "error": "demo_only"}), 403
 
     mime_type = file.mimetype or "image/jpeg"
     try:
@@ -1282,9 +1303,11 @@ def vision_ingredients():
 
     mime_type = file.mimetype or "image/jpeg"
     user_id = session["user_id"]
-    prefer_cache = request.headers.get("X-Demo-Image") == "1"
+    prefer_cache = request.headers.get("X-Demo-Image") == "1" or DEMO_ONLY
     cache_path = _demo_cache_path(image_bytes)
     cached_ingredients = _read_demo_cache(cache_path)
+    if DEMO_ONLY and cached_ingredients is None:
+        return jsonify({"error": "demo_only"}), 403
 
     if prefer_cache and cached_ingredients is not None:
         add_recognition_log(user_id, datetime.now().isoformat(), len(cached_ingredients))

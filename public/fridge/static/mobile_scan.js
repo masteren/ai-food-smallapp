@@ -181,6 +181,12 @@ async function handleScan() {
       clearResults('結果を取得できませんでした。');
       return;
     }
+    if (data.error === 'demo_only') {
+      setError('デモ版のため、サンプル画像のみ認識できます。サンプル画像からお試しください。');
+      setStatus('待機中', null);
+      clearResults('サンプル画像を選んでください。');
+      return;
+    }
     if (!response.ok || !data.ok) {
       const errorMessage = data.error || '認識に失敗しました。';
       setError(errorMessage);

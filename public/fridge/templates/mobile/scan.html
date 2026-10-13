@@ -49,6 +49,9 @@
             <span id="mobileStatusBadge" class="mobile-badge is-hidden">Live</span>
           </div>
           <div id="mobileErrorText" class="mobile-alert is-hidden" role="alert"></div>
+          {% if demo_only %}
+          <div class="helper">デモ版ではサンプル画像で AI 認識をお試しいただけます。</div>
+          {% endif %}
         </div>
       </div>
     </section>

@@ -296,7 +296,7 @@
       statusText.textContent = '画像を選択してください。';
       return;
     }
-    await sendToVision(file);
+    await sendToVision(file, {isDemo: selectedFromSample});
   }
 
   function openConfirm(imageUrl, category, index){

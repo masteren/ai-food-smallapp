@@ -1,0 +1,1 @@
+{"ingredients": [{"name": "焼きそば麺", "name_ja": "焼きそば麺", "name_en": "yakisoba noodles", "quantity": 1.0, "confidence": 0.9, "unit": "個"}, {"name": "キャベツ", "name_ja": "キャベツ", "name_en": "cabbage", "confidence": 0.85, "unit": "枚"}, {"name": "焼きそばソース", "name_ja": "焼きそばソース", "name_en": "yakisoba sauce", "confidence": 0.8, "unit": "None"}], "cached_at": "2026-03-06T11:05:26.004686"}

@@ -44,6 +44,11 @@ from services.openai_vision import (
 
 app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET_KEY"]
+# HTTPS-only session cookie in production (leave unset for local http development)
+app.config.update(
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE") == "1",
+    SESSION_COOKIE_SAMESITE="Lax",
+)
 
 
 DEMO_IMAGE_GROUPS: Tuple[Tuple[str, str], ...] = (
